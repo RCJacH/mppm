@@ -41,18 +41,25 @@ class SampleblockChannelInfo:
 
     def set_info(self, sampleblock):
         self.set_channelblock(sampleblock)
+        self.set_channels()
         self.set_flag()
         self.set_correlation(sampleblock)
         self.set_sample(sampleblock)
         self.set_noisefloor(sampleblock)
 
     def set_channelblock(self, sampleblock):
+        """Channelblock is a transposed sampleblock"""
         self.channelblock = self._transpose(sampleblock)
+
+    def set_channels(self):
+        self.channels = len(self.channelblock)
+        return self.channels
 
     def _transpose(self, sampleblock):
         return np.array(sampleblock).transpose(1, 0)
 
     def set_flag(self):
+        """Flag on for each channel that contains a sounding sample"""
         [
             self.flag_on(i + 1)
             for i, v in enumerate(self.channelblock)
@@ -72,7 +79,7 @@ class SampleblockChannelInfo:
         if self.isCorrelated != False:
             self.isCorrelated = (
                 True
-                if len(channelblock) == 1
+                if self.channel == 1
                 else self._is_sampleblock_correlated(channelblock)
             )
 
@@ -122,7 +129,17 @@ class SampleblockChannelInfo:
             return samples
 
     def set_noisefloor(self, channelblock):
-        self.noisefloor = min(self.noisefloor or self._get_noisefloor_from_sampleblock(channelblock))
+        self.noisefloor = np.amin(
+            np.concatenate(
+                (
+                    [self.noisefloor],
+                    [self._get_noisefloor_from_channelblock(channelblock)],
+                ),
+                axis=0,
+            ),
+            0,
+        )
+        return self.noisefloor
 
-    def _get_noisefloor_from_sampleblock(self, channelblock):
-        return [min(abs(x)) for x in channelblock]
+    def _get_noisefloor_from_channelblock(self, channelblock):
+        return np.amin(np.abs(channelblock), 1).flatten()

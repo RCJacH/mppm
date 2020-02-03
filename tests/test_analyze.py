@@ -13,15 +13,23 @@ class Test_SampleblockChannelInfo(object):
     def obj(self):
         return SampleblockChannelInfo()
 
+    def test_set_channels(self, obj):
+        obj.channelblock = [[0.1], [0.2]]
+        assert obj.set_channels() == 2
+        obj.channelblock = [[0.1, 0.2]]
+        assert obj.set_channels() == 1
+        obj.channelblock = [[0.6721, 0.0391, -0.518], [-0.6968, -0.644, 0.0526]]
+        assert obj.set_channels() == 2
+
     def test_flag_on_from_sample(self, obj):
         obj.flag = 0
-        obj.channelblock = [[0], [0.5]]
+        obj.set_channelblock([[0, 0.5]])
         assert obj.set_flag() == 2
         obj.flag = 0
-        obj.channelblock = [[-0.25], [0]]
+        obj.set_channelblock([[-0.25, 0]])
         assert obj.set_flag() == 1
         obj.flag = 0
-        obj.channelblock = [[0.0], [0.0]]
+        obj.set_channelblock([[0.0, 0.0]])
         assert obj.set_flag() == 0
 
     def test_flag_on(self, obj):
@@ -117,9 +125,22 @@ class Test_SampleblockChannelInfo(object):
         assert obj._is_sample_stereo([0.5, 0.5]) == False
         assert obj._is_sample_stereo([0, 0]) == False
 
-    def test_noisefloor(self, obj):
-        assert obj._get_noisefloor_from_sampleblock([[0.2, 1], [0.1, 0]]) == [0.2, 0]
-        assert obj._get_noisefloor_from_sampleblock([[0, 0], [0, 0]]) == [0, 0]
+    def test_get_noisefloor_from_channelblock(self, obj):
+        assert (
+            obj._get_noisefloor_from_channelblock([[0.2, 1], [0.1, 0]]) == [0.2, 0]
+        ).all()
+        assert (obj._get_noisefloor_from_channelblock([[0, 0], [0, 0]]) == [0, 0]).all()
+        assert (
+            obj._get_noisefloor_from_channelblock([[-1, -0.001], [0.01, -0.02]])
+            == [0.001, 0.01,]
+        ).all()
+
+    def test_set_noisefloor(self, obj):
+        obj.noisefloor = [0.1, 0.2]
+        obj.channels = 2
+        assert (
+            obj.set_noisefloor([[-0.3751, 0.0575], [0.4578, 0.5397]]) == [0.0575, 0.2,]
+        ).all()
 
 
 # class AudioInfo:
