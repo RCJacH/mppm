@@ -30,6 +30,7 @@ class SampleblockChannelInfo:
         isCorrelated -- The panning if both channels have fixed ratio
         sample -- A valid sample of each channel of the same position
         noisefloor -- The lowest bit that contains information
+        channels -- number of audio channels
         """
         self.flag = flag != None and flag
         self.isCorrelated = isCorrelated
@@ -51,12 +52,12 @@ class SampleblockChannelInfo:
         """Channelblock is a transposed sampleblock"""
         self.channelblock = self._transpose(sampleblock)
 
+    def _transpose(self, sampleblock):
+        return np.array(sampleblock).transpose(1, 0)
+
     def set_channels(self):
         self.channels = len(self.channelblock)
         return self.channels
-
-    def _transpose(self, sampleblock):
-        return np.array(sampleblock).transpose(1, 0)
 
     def set_flag(self):
         """Flag on for each channel that contains a sounding sample"""
@@ -79,7 +80,7 @@ class SampleblockChannelInfo:
         if self.isCorrelated != False:
             self.isCorrelated = (
                 True
-                if self.channel == 1
+                if self.channels == 1
                 else self._is_sampleblock_correlated(channelblock)
             )
 
@@ -129,16 +130,14 @@ class SampleblockChannelInfo:
             return samples
 
     def set_noisefloor(self, channelblock):
-        self.noisefloor = np.amin(
-            np.concatenate(
+        newnoisefloor = np.concatenate(
                 (
                     [self.noisefloor],
                     [self._get_noisefloor_from_channelblock(channelblock)],
                 ),
                 axis=0,
             ),
-            0,
-        )
+        self.noisefloor = np.amin(newnoisefloor, 1)
         return self.noisefloor
 
     def _get_noisefloor_from_channelblock(self, channelblock):

@@ -136,8 +136,8 @@ class Test_SampleblockChannelInfo(object):
         ).all()
 
     def test_set_noisefloor(self, obj):
-        obj.noisefloor = [0.1, 0.2]
         obj.channels = 2
+        obj.noisefloor = [0.1, 0.2]
         assert (
             obj.set_noisefloor([[-0.3751, 0.0575], [0.4578, 0.5397]]) == [0.0575, 0.2,]
         ).all()
