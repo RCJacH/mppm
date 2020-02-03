@@ -2,6 +2,19 @@
 	"folders": [
 		{
 			"path": "."
+		},
+		{
+			"path": "C:\\Users\\RCJacH\\OneDrive\\Documents\\Coding\\audio\\monolizer"
 		}
-	]
+	],
+	"settings": {
+		"python.pythonPath": "C:\\Users\\RCJacH\\AppData\\Local\\pypoetry\\Cache\\virtualenvs\\music-production-project-manager-ikzs5I0r-py3.8\\Scripts\\python.exe",
+		"python.venvPath": "C:\\Users\\RCJacH\\AppData\\Local\\pypoetry\\Cache\\virtualenvs",
+		"python.linting.mypyArgs": [
+			"--ignore-missing-imports",
+			"--follow-imports=silent",
+			"--show-column-numbers",
+			"--ignore-missing-stubs"
+		]
+	}
 }

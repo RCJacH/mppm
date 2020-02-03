@@ -6,12 +6,9 @@
     "python.linting.flake8Args": [
         "--max-line-length=88"
     ],
-    "python.pythonPath": "C:\\Users\\RCJacH\\AppData\\Local\\pypoetry\\Cache\\virtualenvs\\music-production-project-manager-ikzs5I0r-py3.8\\Scripts\\python.exe",
     "python.formatting.provider": "black",
-    "python.testing.pytestArgs": [
-        "tests"
-    ],
     "python.testing.unittestEnabled": false,
     "python.testing.nosetestsEnabled": false,
-    "python.testing.pytestEnabled": true
+    "python.testing.pytestEnabled": true,
+    "python.terminal.activateEnvInCurrentTerminal": true
 }
