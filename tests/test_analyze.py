@@ -125,22 +125,22 @@ class Test_SampleblockChannelInfo(object):
         assert obj._is_sample_stereo([0.5, 0.5]) == False
         assert obj._is_sample_stereo([0, 0]) == False
 
-    def test_get_noisefloor_from_channelblock(self, obj):
-        assert (
-            obj._get_noisefloor_from_channelblock([[0.2, 1], [0.1, 0]]) == [0.2, 0]
-        ).all()
-        assert (obj._get_noisefloor_from_channelblock([[0, 0], [0, 0]]) == [0, 0]).all()
-        assert (
-            obj._get_noisefloor_from_channelblock([[-1, -0.001], [0.01, -0.02]])
-            == [0.001, 0.01,]
-        ).all()
+    # def test_get_noisefloor_from_channelblock(self, obj):
+    #     assert (
+    #         obj._get_noisefloor_from_channelblock([[0.2, 1], [0.1, 0]]) == [0.2, 0]
+    #     ).all()
+    #     assert (obj._get_noisefloor_from_channelblock([[0, 0], [0, 0]]) == [0, 0]).all()
+    #     assert (
+    #         obj._get_noisefloor_from_channelblock([[-1, -0.001], [0.01, -0.02]])
+    #         == [0.001, 0.01,]
+    #     ).all()
 
-    def test_set_noisefloor(self, obj):
-        obj.channels = 2
-        obj.noisefloor = [0.1, 0.2]
-        assert (
-            obj.set_noisefloor([[-0.3751, 0.0575], [0.4578, 0.5397]]) == [0.0575, 0.2,]
-        ).all()
+    # def test_set_noisefloor(self, obj):
+    #     obj.channels = 2
+    #     obj.noisefloor = [0.1, 0.2]
+    #     assert (
+    #         obj.set_noisefloor([[-0.3751, 0.0575], [0.4578, 0.5397]]) == [0.0575, 0.2,]
+    #     ).all()
 
 
 # class AudioInfo:

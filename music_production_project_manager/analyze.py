@@ -46,7 +46,7 @@ class SampleblockChannelInfo:
         self.set_flag()
         self.set_correlation(sampleblock)
         self.set_sample(sampleblock)
-        self.set_noisefloor(sampleblock)
+        # self.set_noisefloor(sampleblock)
 
     def set_channelblock(self, sampleblock):
         """Channelblock is a transposed sampleblock"""
@@ -97,6 +97,7 @@ class SampleblockChannelInfo:
         return (np.absolute(np.subtract(*ratios)).flat < self.NULL_THRESHOLD).all()
 
     def set_sample(self, sampleblock):
+        """A valid sample of all channels with the same position"""
         self.sample = self._get_sample_from_sampleblock(sampleblock)
 
     def reset_sample(self):
@@ -129,16 +130,22 @@ class SampleblockChannelInfo:
         except AttributeError:
             return samples
 
-    def set_noisefloor(self, channelblock):
-        newnoisefloor = np.concatenate(
-                (
-                    [self.noisefloor],
-                    [self._get_noisefloor_from_channelblock(channelblock)],
-                ),
-                axis=0,
-            ),
-        self.noisefloor = np.amin(newnoisefloor, 1)
-        return self.noisefloor
+    # Noisefloor algorithm needs reconsideration for three reasons:
+    # 1. Noisefloor should be above digital noisefloor value of 0 (float)
+    # 2. Audio clip could contain fade in/outs that results in values lower than normal noisefloor
+    # 3. Stem tracks combining several takes may have different noisefloor level due to bad
+    #    gain-staging during recording
+    # def set_noisefloor(self, channelblock):
+    #     """Noisefloor is the lowest sample value"""
+    #     newnoisefloor = np.concatenate(
+    #             (
+    #                 [self.noisefloor],
+    #                 [self._get_noisefloor_from_channelblock(channelblock)],
+    #             ),
+    #             axis=0,
+    #         ),
+    #     self.noisefloor = np.amin(newnoisefloor, 1)
+    #     return self.noisefloor
 
-    def _get_noisefloor_from_channelblock(self, channelblock):
-        return np.amin(np.abs(channelblock), 1).flatten()
+    # def _get_noisefloor_from_channelblock(self, channelblock):
+    #     return np.amin(np.abs(channelblock), 1).flatten()
