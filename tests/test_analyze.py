@@ -38,6 +38,7 @@ class Test_SampleblockChannelInfo(object):
         assert obj.flag_on(1) == 1
         assert obj.flag_on(1) == 1
         assert obj.flag_on(2) == 3
+        assert obj.flag_on("") == 0
         obj.flag = 0
 
     def test_transpose(self, obj):
@@ -141,62 +142,3 @@ class Test_SampleblockChannelInfo(object):
     #     assert (
     #         obj.set_noisefloor([[-0.3751, 0.0575], [0.4578, 0.5397]]) == [0.0575, 0.2,]
     #     ).all()
-
-
-# class AudioInfo:
-#     def __init__(self, shape):
-#         self.src = Monolizer()
-#         self.src.file = "tests//" + shape + ".wav"
-#         if shape == "sin":
-#             self.channel = 0
-#             self.channels = 1
-#             self.isMono = True
-#             self.isEmpty = False
-#             self.isFakeStereo = False
-#         if shape == "sins":
-#             self.channel = 0
-#             self.channels = 2
-#             self.isMono = True
-#             self.isEmpty = False
-#             self.isFakeStereo = True
-#         if shape == "empty":
-#             self.channel = self.src.EMPTY
-#             self.channels = 1
-#             self.isMono = False
-#             self.isEmpty = True
-#             self.isFakeStereo = False
-#         if shape == "sin_tri":
-#             self.channel = self.src.STEREO
-#             self.channels = 2
-#             self.isMono = False
-#             self.isEmpty = False
-#             self.isFakeStereo = False
-#         if shape == "sin_l50":
-#             self.channel = 0
-#             self.channels = 2
-#             self.isMono = True
-#             self.isEmpty = False
-#             self.isFakeStereo = True
-#         if shape == "sin_r25":
-#             self.channel = 1
-#             self.channels = 2
-#             self.isMono = True
-#             self.isEmpty = False
-#             self.isFakeStereo = True
-#         if shape == "sin_r100":
-#             self.channel = 1
-#             self.channels = 2
-#             self.isMono = True
-#             self.isEmpty = False
-#             self.isFakeStereo = True
-
-#     def __enter__(self):
-#         return self
-
-#     def __exit__(self, *args):
-#         del self.src
-
-# @pytest.fixture(params=["sin", "sins", "empty", "sin_tri", "sin_l50", "sin_r25", "sin_r100"])
-# def audioinfo(request):
-#     with AudioInfo(request.param) as info:
-#         yield info

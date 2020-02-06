@@ -69,15 +69,15 @@ class SampleblockChannelInfo:
         return self.flag
 
     def flag_on(self, n):
-        try:
+        if type(n) is int:
             self.flag |= 1 << (n - 1)
-        except ValueError:
+        else:
             self.flag = 0
         return self.flag
 
     def set_correlation(self, channelblock):
         """Check whether audio is panned mono"""
-        if self.isCorrelated != False:
+        if self.isCorrelated is not False:
             self.isCorrelated = (
                 True
                 if self.channels == 1
