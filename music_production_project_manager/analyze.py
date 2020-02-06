@@ -105,12 +105,12 @@ class SampleblockChannelInfo:
 
     def _get_sample_from_sampleblock(self, sampleblock):
         sample = self.sample
-        if not sample or not self._is_sample_stereo(sample):
-            sample = self._get_valid_sample(sampleblock)
+        if not sample or 0 in sample or self._is_sample_identical(sample):
+            sample = self._get_valid_sample(sampleblock + [sample])
         return sample
 
-    def _is_sample_stereo(self, sample):
-        return len(set(sample)) > 1
+    def _is_sample_identical(self, sample):
+        return len(set(sample)) == 1
 
     def _get_valid_sample(self, sampleblock):
         try:

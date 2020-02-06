@@ -120,11 +120,13 @@ class Test_SampleblockChannelInfo(object):
         assert obj._get_sample_from_sampleblock([[]]) == [0.1, 0.1]
         obj.reset_sample()
 
-    def test_is_sample_stereo(self, obj):
-        assert obj._is_sample_stereo([0.5, 0.3]) == True
-        assert obj._is_sample_stereo([0.5]) == False
-        assert obj._is_sample_stereo([0.5, 0.5]) == False
-        assert obj._is_sample_stereo([0, 0]) == False
+    def test_is_sample_identical(self, obj):
+        assert obj._is_sample_identical([0.5, 0.3]) == False
+        assert obj._is_sample_identical([0.5]) == True
+        assert obj._is_sample_identical([0.5, 0.5]) == True
+        assert obj._is_sample_identical([0, 0]) == True
+        assert obj._is_sample_identical([0, 1, -1]) == False
+        assert obj._is_sample_identical([0.5] * 4) == True
 
     # def test_get_noisefloor_from_channelblock(self, obj):
     #     assert (
