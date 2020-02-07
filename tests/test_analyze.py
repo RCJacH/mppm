@@ -130,20 +130,36 @@ class Test_SampleblockChannelInfo(object):
     def test_is_channelblock_correlated(self, obj, channelblock, isCorrelated):
         assert obj._is_channelblock_correlated(channelblock) == isCorrelated
 
-    def test_get_sample_from_sampleblock(self, obj):
-        obj.reset_sample()
-        assert obj.sample == []
-        assert obj._get_sample_from_sampleblock(
-            [[0.00308228, 0.00308228], [0.00613403, 0.00613403]]
-        ) == [0.00613403, 0.00613403]
-        assert obj._get_sample_from_sampleblock(
-            [[0.99996948, 0.0], [0.99996948, 0.99804688], [0.99996948, 0.99609375]]
-        ) == [0.99996948, 0.99804688]
-        obj.sample = [0.1, 0.2]
-        assert obj._get_sample_from_sampleblock([[0.2, 0.5,]]) == [0.2, 0.5]
-        obj.sample = [0.8, 0.8]
-        assert obj._get_sample_from_sampleblock([[0.2, 0.5,]]) == [0.8, 0.8]
-        assert obj._get_sample_from_sampleblock([[]]) == [0.8, 0.8]
+    @pytest.mark.parametrize(
+        "sample, block, result",
+        [
+            pytest.param(
+                None,
+                [[0.00308228] * 2,
+                [0.00613403] * 2],
+                [0.00613403] * 2,
+                id="FloatIdentical",
+            ),
+            pytest.param(
+                None,
+                [[0.99996948, 0.0], [0.99996948, 0.99804688], [0.99996948, 0.99609375]],
+                [0.99996948, 0.99804688],
+                id="FloatDiff",
+            ),
+            pytest.param([0.1, 0.2], [[0.2, 0.5]], [0.2, 0.5], id="ReplaceOld"),
+            pytest.param([0.8] * 2, [[0.2, 0.5]], [0.8] * 2, id="KeepOld"),
+            pytest.param([-0.8, 0.2], [[-0.3, 0.8]], [-0.8, 0.2], id="Negative"),
+            pytest.param([], [[0, 0]], [], id="Empty"),
+            pytest.param([-0.8, 0.5, 0.3], [[0.2, -0.6, 0.1]], [-0.8, 0.5, 0.3], id="MultichannelNegative"),
+        ],
+    )
+    def test_get_sample_from_sampleblock(self, obj, sample, block, result):
+        if sample:
+            obj.sample = sample
+        else:
+            obj.reset_sample()
+            assert obj.sample == []
+        assert obj._get_sample_from_sampleblock(block) == result
         obj.reset_sample()
 
     @pytest.mark.parametrize(
@@ -154,8 +170,8 @@ class Test_SampleblockChannelInfo(object):
             pytest.param([0.5, 0.5], True, id="FakeStereo"),
             pytest.param([0, 0], True, id="Zero"),
             pytest.param([0, 1, -1], False, id="TrueMultichannel"),
-            pytest.param([0.5]*4, True, id="FakeMultichannel"),
-        ]
+            pytest.param([0.5] * 4, True, id="FakeMultichannel"),
+        ],
     )
     def test_is_sample_identical(self, obj, sample, result):
         assert obj._is_sample_identical(sample) == result
@@ -176,3 +192,44 @@ class Test_SampleblockChannelInfo(object):
     #     assert (
     #         obj.set_noisefloor([[-0.3751, 0.0575], [0.4578, 0.5397]]) == [0.0575, 0.2,]
     #     ).all()
+
+    @pytest.mark.parametrize(
+        "this, result",
+        [
+            pytest.param(
+                {
+                    "flag": 1,
+                    "isCorrelated": True,
+                    "sample": [0],
+                    "sampleblock": [[1], [0.5], [0.25]],
+                },
+                [1, True, [1]],
+                id="Mono",
+            ),
+            pytest.param(
+                {"sampleblock": [[0, 0], [-0.25, -0.25], [0.5, 0.5]],},
+                [3, True, [0.5, 0.5]],
+                id="FakeStereo",
+            ),
+            pytest.param(
+                {"sampleblock": [[0, 0], [0, 1], [0, 0.5]],},
+                [2, False, []],
+                id="Ch2Only",
+            ),
+            pytest.param(
+                {"sampleblock": [[0, 0], [0, 0], [0, 0]],},
+                [0, True, []],
+                id="Empty",
+            ),
+            pytest.param(
+                {"sampleblock": [[0, 0, 0], [1, 0.5, -0.2], [0.5, 0.25, 0.1]],},
+                [7, False, [1, 0.5, -0.2]],
+                id="MultiChannel",
+            ),
+        ],
+    )
+    def test__init__(self, this, result):
+        obj = SampleblockChannelInfo(**this)
+        assert obj.flag == result[0]
+        assert obj.isCorrelated == result[1]
+        assert obj.sample == result[2]
