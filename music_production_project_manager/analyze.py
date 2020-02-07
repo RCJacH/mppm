@@ -106,23 +106,21 @@ class SampleblockChannelInfo:
         self.sample = []
 
     def _get_sample_from_sampleblock(self, sampleblock):
-        return self._get_valid_sample(sampleblock + [self.sample])
+        if self.sample:
+            sampleblock = np.append([self.sample], sampleblock, axis=0)
+        sampleblock = np.array(sampleblock)
+        return self._get_valid_sample(sampleblock[np.all(sampleblock, axis=1), :])
 
     def _is_sample_identical(self, sample):
         return len(set(sample)) == 1
 
     def _get_valid_sample(self, sampleblock):
         try:
-            sampleblock = [x for x in sampleblock if x != []]
-            return np.amax(np.absolute(np.array(sampleblock)), axis=0).tolist()
-        except StopIteration:
+            a = sampleblock[np.all(sampleblock != 0, axis=1), :]
+            maxindex = np.unravel_index(np.argmax(np.absolute(a)), a.shape)
+            return a[maxindex[0]].tolist()
+        except ValueError:
             return self.sample
-
-    def _validate_sample(self, samples):
-        try:
-            return samples.tolist()
-        except AttributeError:
-            return samples
 
     # Noisefloor algorithm needs reconsideration for three reasons:
     # 1. Noisefloor should be above digital noisefloor value of 0 (float)
