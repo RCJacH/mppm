@@ -106,27 +106,33 @@ class Test_SampleblockChannelInfo(object):
     def test_get_sample_from_sampleblock(self, obj):
         obj.reset_sample()
         assert obj.sample == []
-        assert obj._get_sample_from_sampleblock([[0.0, 0.0]] * 3) == []
+        # assert obj._get_sample_from_sampleblock([[0.0, 0.0]] * 3) == []
         assert obj._get_sample_from_sampleblock(
             [[0.00308228, 0.00308228], [0.00613403, 0.00613403]]
-        ) == [0.00308228, 0.00308228]
+        ) == [0.00613403, 0.00613403]
         assert obj._get_sample_from_sampleblock(
             [[0.99996948, 0.0], [0.99996948, 0.99804688], [0.99996948, 0.99609375]]
         ) == [0.99996948, 0.99804688]
         obj.sample = [0.1, 0.2]
-        assert obj._get_sample_from_sampleblock([[0.2, 0.5,]]) == [0.1, 0.2]
-        obj.sample = [0.1, 0.1]
         assert obj._get_sample_from_sampleblock([[0.2, 0.5,]]) == [0.2, 0.5]
-        assert obj._get_sample_from_sampleblock([[]]) == [0.1, 0.1]
+        obj.sample = [0.8, 0.8]
+        assert obj._get_sample_from_sampleblock([[0.2, 0.5,]]) == [0.8, 0.8]
+        assert obj._get_sample_from_sampleblock([[]]) == [0.8, 0.8]
         obj.reset_sample()
 
-    def test_is_sample_identical(self, obj):
-        assert obj._is_sample_identical([0.5, 0.3]) == False
-        assert obj._is_sample_identical([0.5]) == True
-        assert obj._is_sample_identical([0.5, 0.5]) == True
-        assert obj._is_sample_identical([0, 0]) == True
-        assert obj._is_sample_identical([0, 1, -1]) == False
-        assert obj._is_sample_identical([0.5] * 4) == True
+    @pytest.mark.parametrize(
+        "sample, result",
+        [
+            pytest.param([0.5, 0.3], False, id="Stereo"),
+            pytest.param([0.5], True, id="Mono"),
+            pytest.param([0.5, 0.5], True, id="FakeStereo"),
+            pytest.param([0, 0], True, id="Zero"),
+            pytest.param([0, 1, -1], False, id="TrueMultichannel"),
+            pytest.param([0.5]*4, True, id="FakeMultichannel"),
+        ]
+    )
+    def test_is_sample_identical(self, obj, sample, result):
+        assert obj._is_sample_identical(sample) == result
 
     # def test_get_noisefloor_from_channelblock(self, obj):
     #     assert (

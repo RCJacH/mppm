@@ -104,23 +104,15 @@ class SampleblockChannelInfo:
         self.sample = []
 
     def _get_sample_from_sampleblock(self, sampleblock):
-        sample = self.sample
-        if not sample or 0 in sample or self._is_sample_identical(sample):
-            sample = self._get_valid_sample(sampleblock + [sample])
-        return sample
+        return self._get_valid_sample(sampleblock + [self.sample])
 
     def _is_sample_identical(self, sample):
         return len(set(sample)) == 1
 
     def _get_valid_sample(self, sampleblock):
         try:
-            return next(
-                (
-                    self._validate_sample(samples)
-                    for samples in sampleblock
-                    if (0 not in samples and len(samples) > 0)
-                )
-            )
+            sampleblock = [x for x in sampleblock if x != []]
+            return np.amax(np.absolute(np.array(sampleblock)), axis=0).tolist()
         except StopIteration:
             return self.sample
 
