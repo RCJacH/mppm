@@ -8,7 +8,7 @@ from soundfile import SEEK_END
 class SampleblockChannelInfo:
     def __init__(
         self,
-        threshold=0.00001,
+        threshold=0.00001,  # -100dB
         flag=0,
         isCorrelated=None,
         sample=[],
@@ -16,7 +16,7 @@ class SampleblockChannelInfo:
         noisefloor=0,
     ):
         """Analyze audio information in a single sampleblock
-        
+
         Keyword Arguments:
             threshold {float} -- Ignore all samples below this value (default: {0.00001})
             flag {int} -- Previous channel flag info (default: {0})
