@@ -46,3 +46,4 @@ docs/_build
 __pycache__
 *_cache
 *ipynb*
+htmlcov\
