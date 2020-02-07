@@ -37,14 +37,14 @@ class SampleblockChannelInfo:
         self.sample = sample != None and sample
         self.NULL_THRESHOLD = threshold
         self.noisefloor = noisefloor
-        if sampleblock is not None:
+        if sampleblock:
             self.set_info(sampleblock)
 
     def set_info(self, sampleblock):
         self.set_channelblock(sampleblock)
         self.set_channels()
         self.set_flag()
-        self.set_correlation(sampleblock)
+        self.set_correlation(self.channelblock)
         self.set_sample(sampleblock)
         # self.set_noisefloor(sampleblock)
 
@@ -81,20 +81,22 @@ class SampleblockChannelInfo:
             self.isCorrelated = (
                 True
                 if self.channels == 1
-                else self._is_sampleblock_correlated(channelblock)
+                else self._is_channelblock_correlated(channelblock)
             )
 
-    def _is_sampleblock_correlated(self, channelblock):
+    def _is_channelblock_correlated(self, channelblock):
         ratios = [self._get_ratio(samples) for samples in channelblock]
         return self._is_ratio_correlated(ratios)
 
     def _get_ratio(self, samples):
         a = np.array(samples[:-1])
         b = np.array(samples[1:])
-        return np.nan_to_num(np.divide(b, a, dtype="float")).flatten()
+        return np.nan_to_num(np.divide(b, a, dtype="float")).tolist()
 
     def _is_ratio_correlated(self, ratios):
-        return (np.absolute(np.subtract(*ratios)).flat < self.NULL_THRESHOLD).all()
+        return (
+            np.absolute(np.diff(np.array(ratios), axis=0)).flat < self.NULL_THRESHOLD
+        ).all()
 
     def set_sample(self, sampleblock):
         """A valid sample of all channels with the same position"""
