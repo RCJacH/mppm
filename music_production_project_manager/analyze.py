@@ -37,7 +37,7 @@ class SampleblockChannelInfo:
         self.sample = sample != None and sample
         self.NULL_THRESHOLD = threshold
         self.noisefloor = noisefloor
-        if sampleblock:
+        if type(sampleblock) is np.ndarray and sampleblock.size:
             self.set_info(sampleblock)
 
     def set_info(self, sampleblock):
