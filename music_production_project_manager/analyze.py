@@ -80,7 +80,7 @@ class SampleblockChannelInfo:
         if self.isCorrelated is not False:
             self.isCorrelated = (
                 True
-                if self.channels == 1
+                if self.channels < 2
                 else self._is_channelblock_correlated(channelblock)
             )
 
