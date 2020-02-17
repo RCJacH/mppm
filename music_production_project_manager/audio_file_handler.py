@@ -18,7 +18,7 @@ class AudioFile:
         filename=None,
         blocksize=None,
         debug=False,
-        threshold=0,
+        threshold=0.0001,
         analyze=True,
         action=None,
     ):
@@ -68,15 +68,15 @@ class AudioFile:
         self._file = sf(file)
         if not self.blocksize:
             self.blocksize = self._file.samplerate
-            self._keepChannel = self.analyze()
+            self.analyze()
             # LOGGER.info('Finished Analyzing channel properties: channel == %s; empty == %s; fake == %s;', self.channel, self.isEmpty, self.isFakeStereo)
             self._file.seek(0)
 
     filename = property(lambda self: self._filename)
 
-    keepChannel = property(lambda self: self._keepChannel)
+    validChannel = property(lambda self: self._validChannel)
 
-    validChannels = property(lambda self: bin(self.keepChannel).count("1"))
+    countValidChannel = property(lambda self: bin(self.validChannel).count("1"))
 
     channels = property(lambda self: self._file.channels if self._file else 0)
 
@@ -86,49 +86,50 @@ class AudioFile:
 
     sample = property(lambda self: self._sample)
 
-    isMono = property(lambda self: self.validChannels == 1)
+    isEmpty = property(lambda self: self.validChannel == 0 or self.channels == 0)
 
-    isEmpty = property(lambda self: self.keepChannel == 0 or self.channels == 0)
+    isMono = property(lambda self: (self.isCorrelated or self.countValidChannel == 1) and not self.isEmpty)
 
     isFakeStereo = property(lambda self: self.isMono and self.channels == 2)
 
-    isMultichannel = property(lambda self: self.validChannels > 2 and self.channels > 2)
+    isMultichannel = property(
+        lambda self: self.channels > 2
+        and self.countValidChannel > 2
+        and not self.isCorrelated
+    )
 
-    def _identify_valid_channels(
-        self, flag=0, isCorrelated=False, sample=[], eof=False
-    ):
+    def analyze(self):
+        if self.file:
+            info = self._analyze_blocks()
+            self._flag = info.flag
+            self._isCorrelated = info.isCorrelated
+            self._sample = info.sample
+            self._validChannel = self._analyze_valid_channels(
+                self.flag, self.isCorrelated, self.sample
+            )
+
+    def _analyze_valid_channels(self, flag=0, isCorrelated=False, sample=[]):
         """ Analyze which channels to keep
-
-        Possibility for channels
-        L == 0; # Empty
-        L != 0;
-        L == R == 0; # Empty
-        L != 0; R == 0; # Channel 0
-        L == 0; R != 0; # Channel 1
-        L * ratio == R; # Channel = R if ratio > 1 else L
-        L * ratio != R; # Stereo
         """
-        LOGGER.debug(
-            "Analyzing channel info: flag=%s; correlated=%s; sample=%s",
-            str(flag),
-            str(isCorrelated),
-            str(sample),
-        )
         if self.channels == 1 and flag:
             return 1  # Single Channel -> Mono
         if not isCorrelated and "0" not in bin(flag)[2:]:
             return flag  # True Multichannel
-        if eof:
-            if not flag or flag == 0:
-                return 0  # Empty File
-            if isCorrelated:
-                try:
-                    return sample.index(max(sample, key=abs))
-                except IndexError:
-                    raise Exception("Sample argument must have at least length of 1.")
-            else:
-                return flag
-        return None
+        if not flag or flag == 0:
+            return 0  # Empty File
+        if isCorrelated: # When all channels have same ratio
+            try:
+                return sample.index(max(sample, key=abs)) + 1
+            except IndexError:
+                raise Exception("Sample argument must have at least length of 1.")
+        else:
+            return flag
+
+    def _analyze_blocks(self):
+        info = None
+        for sampleblock in self.file.blocks(blocksize=self.blocksize, always_2d=True):
+            info = self._get_channel_info_from_sampleblock(sampleblock, info)
+        return info
 
     def _get_channel_info_from_sampleblock(self, sampleblock, info=None):
         if info is None:
@@ -140,37 +141,3 @@ class AudioFile:
             }
         info["sampleblock"] = sampleblock
         return SampleblockChannelInfo(**info)
-
-    def _analyze_blocks(self):
-        info = None
-        for sampleblock in self.file.blocks(blocksize=self.blocksize, always_2d=True):
-            info = self._get_channel_info_from_sampleblock(sampleblock, info)
-        return info
-
-    def analyze(self):
-        if self.file:
-            info = self._analyze_blocks()
-            # flag = correlated = sample = None
-            # for sampleblock in self.file.blocks(
-            #     blocksize=self.blocksize, always_2d=True
-            # ):
-            #     info = SampleblockChannelInfo(
-            #         sampleblock=sampleblock,
-            #         flag=flag,
-            #         isCorrelated=correlated,
-            #         sample=sample,
-            #         threshold=self.NULL_THRESHOLD,
-            #     )
-            #     flag = info.flag
-            #     correlated = info.isCorrelated
-            #     sample = info.sample
-            # channel = self._identify_valid_channels(flag, correlated, sample)
-            self._flag = info.flag
-            self._isCorrelated = info.isCorrelated
-            self._sample = info.sample
-            print(self.flag, self.isCorrelated, self.sample)
-            return self._identify_valid_channels(
-                self.flag, self.isCorrelated, self.sample, eof=True
-            )
-        else:
-            return None

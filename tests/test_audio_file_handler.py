@@ -12,18 +12,21 @@ class AudioInfo(object):
     def __init__(self, shape):
         self.filename = os.path.join("tests", "audio_files", shape + ".wav")
         self.src = AudioFile(self.filename)
-        self.isEmpty = True if shape[0] == "0" else False
+        self.isCorrelated = False if ("+" in shape or "100" in shape) else True
+        self.isEmpty = shape[0] == "0"
         self.isMono = False if (self.isEmpty or "+" in shape) else True
         self.channels = 1 if "-m" in shape else 2
-        self.keepChannel = None
-        self.flag = (
+        self.validChannel = (
             0
-            if self.isEmpty
-            else 1
-            if "-m" in shape
-            else 2
-            if "-r100" in shape
+            if "0-" in shape
             else 3
+            if "+" in shape
+            else 2
+            if "r" in shape
+            else 1
+        )
+        self.flag = (
+            0 if self.isEmpty else 1 if "-m" in shape else 2 if "-r100" in shape else 3
         )
         self.isFakeStereo = self.isMono and self.channels == 2
 
@@ -46,14 +49,13 @@ class TestAudioFile:
     @pytest.fixture(
         params=[
             "flag",
-            # "keepChannel",
+            "isCorrelated",
+            "validChannel",
             "channels",
-            # "isCorrelated",
-            # "sample",
             "isMono",
             "isEmpty",
-            # "isFakeStereo",
-            # "isMultichannel",
+            "isFakeStereo",
+            "isMultichannel",
         ]
     )
     def each_attribute(self, request, audioinfo):
@@ -61,5 +63,3 @@ class TestAudioFile:
 
     def test_analyze(self, each_attribute):
         assert each_attribute[0] == each_attribute[1]
-        # assert audioinfo.src.flag == audioinfo.flag
-        # assert audioinfo.src.isMono == audioinfo.isMono
