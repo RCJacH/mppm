@@ -7,10 +7,12 @@ import numpy as np
 from music_production_project_manager.audio_file_handler import AudioFile
 from soundfile import SoundFile as sf
 
+def get_audio_path(name):
+    return os.path.join("tests", "audio_files", name + ".wav")
 
 class AudioInfo(object):
     def __init__(self, shape):
-        self.filename = os.path.join("tests", "audio_files", shape + ".wav")
+        self.filename = get_audio_path(shape)
         self.src = AudioFile(self.filename)
         self.isCorrelated = False if ("+" in shape or "100" in shape) else True
         self.isEmpty = shape[0] == "0"
@@ -29,6 +31,7 @@ class AudioInfo(object):
             0 if self.isEmpty else 1 if "-m" in shape else 2 if "-r100" in shape else 3
         )
         self.isFakeStereo = self.isMono and self.channels == 2
+        self.isMultichannel = shape[-1] == "n" or shape.count("+") > 1
 
     def __enter__(self):
         return self
@@ -63,3 +66,16 @@ class TestAudioFile:
 
     def test_analyze(self, each_attribute):
         assert each_attribute[0] == each_attribute[1]
+
+    def test_empty_file(self):
+        with AudioFile(get_audio_path("empty")) as src:
+            assert src.flag == None
+            assert src.isCorrelated == None
+            assert src.isMono == False
+            assert src.isFakeStereo == False
+            assert src.isMultichannel == False
+
+    def test__enter__exit(self):
+        with AudioFile(get_audio_path("empty")) as src:
+            assert src.file is not None
+        assert src.file is None

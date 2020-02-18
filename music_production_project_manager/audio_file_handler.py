@@ -57,7 +57,6 @@ class AudioFile:
         if self.file:
             self.file.close()
             self._file = None
-            self._channel = None
 
     @property
     def file(self):
@@ -101,9 +100,10 @@ class AudioFile:
     def analyze(self):
         if self.file:
             info = self._analyze_blocks()
-            self._flag = info.flag
-            self._isCorrelated = info.isCorrelated
-            self._sample = info.sample
+            if info is not None:
+                self._flag = info.flag
+                self._isCorrelated = info.isCorrelated
+                self._sample = info.sample
             self._validChannel = self._analyze_valid_channels(
                 self.flag, self.isCorrelated, self.sample
             )
@@ -111,13 +111,13 @@ class AudioFile:
     def _analyze_valid_channels(self, flag=0, isCorrelated=False, sample=[]):
         """ Analyze which channels to keep
         """
+        if flag == None or flag == 0:
+            return 0  # Empty File
         if self.channels == 1 and flag:
             return 1  # Single Channel -> Mono
         if not isCorrelated and "0" not in bin(flag)[2:]:
             return flag  # True Multichannel
-        if not flag or flag == 0:
-            return 0  # Empty File
-        if isCorrelated: # When all channels have same ratio
+        if isCorrelated:
             try:
                 return sample.index(max(sample, key=abs)) + 1
             except IndexError:
