@@ -62,6 +62,8 @@ class Generator:
             return self.set_pan(self.get_wavetable("sin-s"), -50)
         elif name == "sin-r25":
             return self.set_pan(self.get_wavetable("sin-s"), 25)
+        elif name == "empty":
+            return []
         return wt
 
     def write(self, name, sr=44100, subtype='PCM_24'):
@@ -69,5 +71,5 @@ class Generator:
 
 if __name__ == "__main__":
     wt_gen = Generator()
-    for name in ["sin-m", "sin-s", "0-m", "0-s", "sin+tri", "sin-r100", "sin-l50", "sin-r25"]:
+    for name in ["sin-m", "sin-s", "0-m", "0-s", "sin+tri", "sin-r100", "sin-l50", "sin-r25", "empty"]:
         wt_gen.write(name)
