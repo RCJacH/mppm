@@ -13,30 +13,32 @@ class FolderBrowser(tk.Frame):
         self.display_file_list()
 
     def display_header(self):
-        def browse_button():
+        def browse_button(address):
             path = tk.filedialog.askdirectory()
             if path:
                 self.path = path
-                self.address.delete(0, tk.END)
-                self.address.insert(0, path)
+                address.delete(0, tk.END)
+                address.insert(0, path)
 
-        self.header_frame = ttk.Frame(self)
-        self.header_frame.pack(side=tk.TOP, expand=True, fill=tk.BOTH)
-        self.header_left = ttk.Frame(self.header_frame)
-        self.header_left.pack(side=tk.LEFT, expand=True, fill=tk.Y)
-        self.title = ttk.Label(self.header_left, text="Title")
-        self.title.pack(side=tk.TOP, anchor=tk.W)
-        self.address = ttk.Entry(self.header_left)
-        self.address.pack(side=tk.LEFT)
-        self.browse = ttk.Button(self.header_left, text="Browse", command=browse_button)
-        self.browse.pack(side=tk.LEFT)
-        self.header_mid = ttk.Frame(self.header_frame)
-        self.header_mid.pack(side=tk.LEFT, expand=True, fill=tk.Y)
-        self.header_right = ttk.Frame(self.header_frame)
-        self.header_right.pack(side=tk.LEFT, expand=True, fill=tk.Y)
-        self.analyze = ttk.Button(self.header_right, text="Analyze")
-        self.analyze.pack(side=tk.RIGHT, expand=True, fill=tk.BOTH)
+        frame = ttk.Frame(self)
+        left = ttk.Frame(frame)
+        mid = ttk.Frame(frame)
+        right = ttk.Frame(frame)
 
+        title = ttk.Label(left, text="Title")
+        title.pack(side=tk.TOP, anchor=tk.W)
+        address = ttk.Entry(left, width=36)
+        address.pack(side=tk.LEFT)
+        browse = ttk.Button(left, text="Browse", command=lambda: browse_button(address))
+        browse.pack(side=tk.LEFT)
+
+        analyze = ttk.Button(right, text="Analyze")
+        analyze.pack(side=tk.RIGHT, expand=True, fill=tk.BOTH)
+        left.pack(side=tk.LEFT, expand=False, fill=tk.Y)
+        right.pack(side=tk.RIGHT, expand=False, fill=tk.Y)
+        mid.pack(side=tk.LEFT, expand=True, fill=tk.BOTH)
+        frame = frame
+        frame.pack(side=tk.TOP, expand=True, fill=tk.BOTH)
 
     def display_file_list(self):
         frame = ttk.Frame(self)
@@ -51,13 +53,8 @@ class FolderBrowser(tk.Frame):
         tree.column("#2", width=64, stretch=False, anchor=tk.N)
         tree.heading("Action", text="Action")
         tree.column("Action", width=128, stretch=False, anchor=tk.N)
-        # tree.column("Actions", stretch=False, anchor=tk.N)
         # for i in range(20):
             # self.file_tree.insert('', "end", text=str(i))
-            # self.file_list.insert(tk.END, "")
-            # self.property_list.insert(tk.END, "")
-            # self.channels_list.insert(tk.END, "")
-            # self.action_list.insert(tk.END, "")
 
         self.file_list_frame = frame
         self.file_list_frame.pack(side=tk.TOP)
