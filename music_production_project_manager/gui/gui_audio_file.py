@@ -37,49 +37,33 @@ class FolderBrowser(tk.Frame):
         self.analyze = ttk.Button(self.header_right, text="Analyze")
         self.analyze.pack(side=tk.RIGHT, expand=True, fill=tk.BOTH)
 
-    def display_file_list(self):
-        self.file_list_frame = ttk.Frame(self)
-        self.file_list_frame.pack(side=tk.TOP)
-        self.scrollbar = ttk.Scrollbar(self.file_list_frame)
-        self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        self.action_list = tk.Listbox(
-            self.file_list_frame,
-            width=16,
-            borderwidth=0,
-            highlightthickness=0,
-            yscrollcommand=self.scrollbar.set,
-        )
-        self.action_list.pack(side=tk.LEFT, fill=tk.Y)
-        self.channels_list = tk.Listbox(
-            self.file_list_frame,
-            width=8,
-            borderwidth=0,
-            highlightthickness=0,
-            yscrollcommand=self.scrollbar.set,
-        )
-        self.channels_list.pack(side=tk.LEFT, fill=tk.Y)
-        self.property_list = tk.Listbox(
-            self.file_list_frame,
-            borderwidth=0,
-            highlightthickness=0,
-            yscrollcommand=self.scrollbar.set,
-        )
-        self.property_list.pack(side=tk.LEFT, fill=tk.Y)
-        self.file_list = tk.Listbox(
-            self.file_list_frame,
-            borderwidth=0,
-            highlightthickness=0,
-            yscrollcommand=self.scrollbar.set,
-        )
-        self.file_list.pack(side=tk.RIGHT, fill=tk.Y)
-        for i in range(1):
-            self.file_list.insert(tk.END, "")
-            self.property_list.insert(tk.END, "")
-            self.channels_list.insert(tk.END, "")
-            self.action_list.insert(tk.END, "")
 
-        self.scrollbar.config(command=self.file_list.yview)
-        pass
+    def display_file_list(self):
+        frame = ttk.Frame(self)
+        tree = ttk.Treeview(frame, columns=("Channels", "Identical", "Action"))
+        scroll = ttk.Scrollbar(frame, command=tree.yview)
+        tree.configure(yscroll=scroll)
+        tree.heading("#0", text="Filename")
+        tree.column("#0", width=384, stretch=False)
+        tree.heading("#1", text="Channels")
+        tree.column("#1", width=64, stretch=False, anchor=tk.N)
+        tree.heading("#2", text="Identical")
+        tree.column("#2", width=64, stretch=False, anchor=tk.N)
+        tree.heading("Action", text="Action")
+        tree.column("Action", width=128, stretch=False, anchor=tk.N)
+        # tree.column("Actions", stretch=False, anchor=tk.N)
+        # for i in range(20):
+            # self.file_tree.insert('', "end", text=str(i))
+            # self.file_list.insert(tk.END, "")
+            # self.property_list.insert(tk.END, "")
+            # self.channels_list.insert(tk.END, "")
+            # self.action_list.insert(tk.END, "")
+
+        self.file_list_frame = frame
+        self.file_list_frame.pack(side=tk.TOP)
+        self.file_tree = tree
+        tree.pack(side=tk.LEFT, fill=tk.Y)
+        scroll.pack(side=tk.LEFT, fill=tk.Y)
 
     def display_actions(self):
         pass
