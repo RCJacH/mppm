@@ -87,7 +87,10 @@ class AudioFile:
 
     isEmpty = property(lambda self: self.validChannel == 0 or self.channels == 0)
 
-    isMono = property(lambda self: (self.isCorrelated or self.countValidChannel == 1) and not self.isEmpty)
+    isMono = property(
+        lambda self: (self.isCorrelated or self.countValidChannel == 1)
+        and not self.isEmpty
+    )
 
     isFakeStereo = property(lambda self: self.isMono and self.channels == 2)
 
@@ -101,6 +104,7 @@ class AudioFile:
         if self.file:
             info = self._analyze_blocks()
             if info is not None:
+                print(info.flag, info.isCorrelated, info.sample)
                 self._flag = info.flag
                 self._isCorrelated = info.isCorrelated
                 self._sample = info.sample
@@ -126,18 +130,9 @@ class AudioFile:
             return flag
 
     def _analyze_blocks(self):
-        info = None
+        info = SampleblockChannelInfo(
+            flag=None, isCorrelated=None, sample=None, threshold=self.NULL_THRESHOLD
+        )
         for sampleblock in self.file.blocks(blocksize=self.blocksize, always_2d=True):
-            info = self._get_channel_info_from_sampleblock(sampleblock, info)
+            info.set_info(sampleblock)
         return info
-
-    def _get_channel_info_from_sampleblock(self, sampleblock, info=None):
-        if info is None:
-            info = {
-                "flag": None,
-                "isCorrelated": None,
-                "sample": None,
-                "threshold": self.NULL_THRESHOLD,
-            }
-        info["sampleblock"] = sampleblock
-        return SampleblockChannelInfo(**info)
