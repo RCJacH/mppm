@@ -80,11 +80,7 @@ class SampleblockChannelInfo:
     def set_correlation(self, channelblock):
         """Check whether audio is panned mono"""
         if self.isCorrelated is not False:
-            self.isCorrelated = (
-                True
-                if self.channels < 2
-                else self._is_channelblock_correlated(channelblock)
-            )
+            self.isCorrelated = self.channels < 2 or self._is_channelblock_correlated(channelblock)
 
     def _is_channelblock_correlated(self, channelblock):
         ratios = [self._get_ratio(samples) for samples in channelblock]
