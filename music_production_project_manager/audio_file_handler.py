@@ -1,4 +1,5 @@
 import os
+import shutil
 from soundfile import SoundFile as sf
 from soundfile import SEEK_END
 from music_production_project_manager.analyze import SampleblockChannelInfo
@@ -89,7 +90,9 @@ class AudioFile:
 
     countValidChannel = property(lambda self: bin(self.validChannel).count("1"))
 
-    channels = property(lambda self: self._file.channels if self._file else self._channels)
+    channels = property(
+        lambda self: self._file.channels if self._file else self._channels
+    )
 
     flag = property(lambda self: self._flag)
 
@@ -150,6 +153,38 @@ class AudioFile:
             info.set_info(sampleblock)
         return info
 
+    def backup(self, folder="bak", newfolder=True, replace=False, noAction=False):
+        def join(*args, inc="", ext=""):
+            return (
+                os.path.join(*args).rstrip("\\")
+                + (inc if inc != "0" else "")
+                + ("." + ext if ext else "")
+            )
+
+        def unique(*args, new=False, **kwargs):
+            name = ""
+            if new:
+                i = 0
+                while os.path.exists(name := join(*args, inc=str(i), **kwargs)):
+                    i += 1
+            else:
+                name = join(*args, **kwargs)
+            return name
+
+        oldpath, filename = os.path.split(self._filename)
+        bakpath, bakfolder = os.path.split(folder)
+        path = bakpath if bakpath != "" else oldpath
+
+        foldername = unique(path, bakfolder, new=newfolder)
+        if not os.path.exists(foldername) and not noAction:
+            os.makedirs(foldername)
+
+        filename, ext = filename.split('.')
+        newfile = unique(foldername, filename, new=(not replace), ext=ext)
+        if not noAction:
+            shutil.copyfile(self._filename, newfile)
+        return newfile
+
     def monolize(self, channel=None):
         if self.file and (channel or self.isFakeStereo):
             channel = channel or self._validChannel
@@ -158,13 +193,13 @@ class AudioFile:
             st = self.file.subtype
             ed = self.file.endian
             fm = self.file.format
-            with sf(self._filename, 'w', self._samplerate, 1, st, ed, fm, True) as f:
+            with sf(self._filename, "w", self._samplerate, 1, st, ed, fm, True) as f:
                 f.write(data)
             self.file = self.filename
 
     def remove(self, forced=False):
         if self.file and (forced or self.isEmpty):
             self.close()
-            print(self._filename)
             os.remove(self._filename)
-            del(self)
+            del self
+
