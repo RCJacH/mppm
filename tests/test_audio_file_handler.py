@@ -21,7 +21,11 @@ def tmp_folder(tmp_path_factory):
 
 @pytest.fixture(scope="function")
 def tmp_file(request, tmp_folder):
-    testfile = get_audio_path(request.param)
+    try:
+        filename = request.param
+    except AttributeError:
+        filename = "sin-m"
+    testfile = get_audio_path(filename)
     file = os.path.join(tmp_folder, os.path.split(testfile)[1])
     shutil.copyfile(testfile, file)
     yield (file, testfile)
@@ -96,9 +100,47 @@ class TestAudioFile:
         assert obj.file is None
         assert obj.channels == 1
 
-    def test_backup(self):
-        with AudioFile(get_audio_path("empty")) as obj:
-            obj.backup()
+    @pytest.mark.parametrize(
+        "params, result",
+        [
+            pytest.param({}, ("bak", "sin-m.wav"), id="default"),
+            pytest.param(
+                {"folderExists": True}, ("bak1", "sin-m.wav"), id="inc-foldername"
+            ),
+            pytest.param(
+                {"fileExists": True}, ("bak", "sin-m1.wav"), id="inc-filename"
+            ),
+            pytest.param(
+                {"fileExists": True, "replace": True},
+                ("bak", "sin-m.wav"),
+                id="replace",
+            ),
+        ],
+    )
+    def test_backup(self, params, result, tmp_path):
+        testfile = get_audio_path("sin-m")
+        filename = os.path.split(testfile)[1]
+        bakpath = os.path.join(tmp_path, "bak")
+        file = os.path.join(tmp_path, filename)
+        shutil.copyfile(testfile, file)
+        if "folderExists" in params:
+            os.makedirs(bakpath)
+            bakpath += "1"
+            params.pop("folderExists")
+        if "fileExists" in params:
+            os.makedirs(bakpath)
+            with open(os.path.join(bakpath, filename), "w") as f:
+                f.write("")
+            params.pop("fileExists")
+            params["newfolder"] = False
+        with AudioFile(file) as obj:
+            if "noAction" in params:
+                assert obj.backup(**params) == result
+            else:
+                f = obj.backup(**params)
+                newf = os.path.join(tmp_path, *result)
+                assert f == newf
+                assert os.path.exists(newf)
 
     @pytest.mark.parametrize(
         "tmp_file, result", [("sin-s", True)], indirect=["tmp_file"]
