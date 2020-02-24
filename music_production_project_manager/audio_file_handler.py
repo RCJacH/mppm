@@ -162,13 +162,12 @@ class AudioFile:
             )
 
         def unique(*args, new=False, **kwargs):
+            if not new:
+                return join(*args, **kwargs)
             name = ""
-            if new:
-                i = 0
-                while os.path.exists(name := join(*args, inc=str(i), **kwargs)):
-                    i += 1
-            else:
-                name = join(*args, **kwargs)
+            i = 0
+            while os.path.exists(name := join(*args, inc=str(i), **kwargs)):
+                i += 1
             return name
 
         oldpath, filename = os.path.split(self._filename)

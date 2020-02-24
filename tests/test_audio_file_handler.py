@@ -20,17 +20,15 @@ def tmp_folder(tmp_path_factory):
 
 
 @pytest.fixture(scope="function")
-def tmp_file(request, tmp_folder):
+def tmp_file(request, tmp_path):
     try:
         filename = request.param
     except AttributeError:
         filename = "sin-m"
     testfile = get_audio_path(filename)
-    file = os.path.join(tmp_folder, os.path.split(testfile)[1])
+    file = os.path.join(tmp_path, os.path.split(testfile)[1])
     shutil.copyfile(testfile, file)
     yield (file, testfile)
-    if os.path.isfile(file):
-        os.remove(file)
 
 
 class AudioInfo(object):
@@ -117,12 +115,11 @@ class TestAudioFile:
             ),
         ],
     )
-    def test_backup(self, params, result, tmp_path):
-        testfile = get_audio_path("sin-m")
+    def test_backup(self, params, result, tmp_file):
+        file, testfile = tmp_file
         filename = os.path.split(testfile)[1]
-        bakpath = os.path.join(tmp_path, "bak")
-        file = os.path.join(tmp_path, filename)
-        shutil.copyfile(testfile, file)
+        tmppath = os.path.split(file)[0]
+        bakpath = os.path.join(tmppath, "bak")
         if "folderExists" in params:
             os.makedirs(bakpath)
             bakpath += "1"
@@ -138,14 +135,16 @@ class TestAudioFile:
                 assert obj.backup(**params) == result
             else:
                 f = obj.backup(**params)
-                newf = os.path.join(tmp_path, *result)
+                newf = os.path.join(tmppath, *result)
                 assert f == newf
                 assert os.path.exists(newf)
 
     @pytest.mark.parametrize(
-        "tmp_file, result", [("sin-s", True)], indirect=["tmp_file"]
+        "tmp_file, params, result",
+        [("sin-s", {}, True), ("sin+tri", {}, False)],
+        indirect=["tmp_file"],
     )
-    def test_monolize(self, tmp_file, result):
+    def test_monolize(self, tmp_file, params, result):
         file, testfile = tmp_file
         with AudioFile(filename=file) as obj:
             obj.monolize()
