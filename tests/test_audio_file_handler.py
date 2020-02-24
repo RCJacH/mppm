@@ -14,11 +14,6 @@ def get_audio_path(name, ext=".wav"):
     return os.path.join("tests", "audio_files", name + ext)
 
 
-@pytest.fixture(scope="module", autouse=True)
-def tmp_folder(tmp_path_factory):
-    yield tmp_path_factory.mktemp("audio_temp_files")
-
-
 @pytest.fixture(scope="function")
 def tmp_file(request, tmp_path):
     try:
@@ -164,7 +159,12 @@ class TestAudioFile:
 
     @pytest.mark.parametrize(
         "tmp_file, params, result",
-        [("empty", {}, False), ("sin-m", {}, True), ("sin-m", {"forced": True}, False)],
+        [
+            ("empty", {}, False),
+            ("0-s", {}, False),
+            ("sin-m", {}, True),
+            ("sin-m", {"forced": True}, False),
+        ],
         indirect=["tmp_file"],
     )
     def test_remove(self, tmp_file, params, result):
@@ -172,3 +172,19 @@ class TestAudioFile:
         with AudioFile(filename=file) as obj:
             obj.remove(**params)
         assert os.path.isfile(file) == result
+
+    @pytest.mark.parametrize(
+        "tmp_file, params, isSplit",
+        [("sin-s", {}, True), ("sin-m", {}, False), ("empty", {}, False)],
+        indirect=["tmp_file"],
+    )
+    def test_split(self, tmp_file, params, isSplit):
+        file = tmp_file[0]
+        _, filename = os.path.split(file)
+        path, ext = os.path.splitext(file)
+        with AudioFile(filename=file) as obj:
+            obj.split(**params)
+        assert os.path.isfile(file) != isSplit
+        for ch in (".L", ".R"):
+            assert os.path.isfile(path + ch + ext) == isSplit
+
