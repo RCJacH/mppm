@@ -141,13 +141,17 @@ class TestAudioFile:
 
     @pytest.mark.parametrize(
         "tmp_file, params, result",
-        [("sin-s", {}, True), ("sin+tri", {}, False)],
+        [
+            ("sin-s", {}, True),
+            ("sin+tri", {}, True),
+            ("sin+tri", {"channel": 1}, False),
+        ],
         indirect=["tmp_file"],
     )
     def test_monolize(self, tmp_file, params, result):
         file, testfile = tmp_file
         with AudioFile(filename=file) as obj:
-            obj.monolize()
+            obj.monolize(**params)
             assert (
                 np.all(
                     np.equal(
@@ -159,10 +163,12 @@ class TestAudioFile:
             )
 
     @pytest.mark.parametrize(
-        "tmp_file, result", [("empty", False)], indirect=["tmp_file"]
+        "tmp_file, params, result",
+        [("empty", {}, False), ("sin-m", {}, True), ("sin-m", {"forced": True}, False)],
+        indirect=["tmp_file"],
     )
-    def test_remove(self, tmp_file, result):
+    def test_remove(self, tmp_file, params, result):
         file, _ = tmp_file
         with AudioFile(filename=file) as obj:
-            obj.remove(forced=True)
+            obj.remove(**params)
         assert os.path.isfile(file) == result
