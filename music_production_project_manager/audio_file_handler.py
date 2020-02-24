@@ -202,3 +202,15 @@ class AudioFile:
             os.remove(self._filename)
             del self
 
+    def split(self):
+        if self.file and self.channels == 2:
+            path, ext = os.path.splitext(self._filename)
+            for i, ch in enumerate([".L", ".R"]):
+                self.file.seek(0)
+                data = self.file.read()[i]
+                st = self.file.subtype
+                ed = self.file.endian
+                fm = self.file.format
+                with sf(path+ch+ext, "w", self._samplerate, 1, st, ed, fm, True) as f:
+                    f.write(data)
+            self.remove(forced=True)
