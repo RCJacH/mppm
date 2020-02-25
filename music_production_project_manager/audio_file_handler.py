@@ -1,5 +1,7 @@
 import os
 import shutil
+import re
+import numpy as np
 from soundfile import SoundFile as sf
 from soundfile import SEEK_END
 from music_production_project_manager.analyze import SampleblockChannelInfo
@@ -81,7 +83,6 @@ class AudioFile:
         if not self.blocksize:
             self.blocksize = self._samplerate
         self.analyze()
-        # LOGGER.info('Finished Analyzing channel properties: channel == %s; empty == %s; fake == %s;', self.channel, self.isEmpty, self.isFakeStereo)
         self._file.seek(0)
 
     filename = property(lambda self: self._filename)
@@ -214,3 +215,24 @@ class AudioFile:
                 with sf(path+ch+ext, "w", self._samplerate, 1, st, ed, fm, True) as f:
                     f.write(data)
             self.remove(forced=True)
+
+    def join(self, other=None):
+        path, ext = os.path.splitext(self._filename)
+        if s := re.match(r"(.+)([^\a])([lL]|[rR])$", path):
+            base, delimiter, ch = s.groups()
+            chs = ["L", "R"]
+            chnum = chs.index(ch)
+            data = self.file.read(always_2d=True)
+            chs.remove(ch)
+            newfile = base + delimiter + chs[0] + ext
+            if os.path.exists(newfile):
+                with AudioFile(newfile) as f:
+                    if chnum:
+                        data = np.concatenate((f.file.read(always_2d=True), data), axis=1)
+                    else:
+                        data = np.concatenate((data, f.file.read(always_2d=True)), axis=1)
+            st = self.file.subtype
+            ed = self.file.endian
+            fm = self.file.format
+            with sf(base+ext, "w", self._samplerate, 2, st, ed, fm, True) as f:
+                f.write(data)
