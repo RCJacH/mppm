@@ -1,3 +1,7 @@
+import os
+import shutil
+import re
+import numpy as np
 from soundfile import SoundFile as sf
 from soundfile import SEEK_END
 from music_production_project_manager.analyze import SampleblockChannelInfo
@@ -26,11 +30,13 @@ class AudioFile:
         self._filename = filename
         self._file = None
         self.blocksize = blocksize
+        self._channels = None
         self._keepChannel = 0
         self._debug = debug
         self._flag = None
         self._isCorrelated = None
         self._sample = None
+        self._samplerate = None
         self.NULL_THRESHOLD = threshold
         if filename is not None:
             try:
@@ -42,6 +48,8 @@ class AudioFile:
         self.close()
 
     def __enter__(self):
+        if self._file is None and self._filename is not None:
+            self.file = self._filename
         return self
 
     def __exit__(self, *args):
@@ -54,9 +62,14 @@ class AudioFile:
         return info.format(self)
 
     def close(self):
-        if self.file:
-            self.file.close()
+        if self._file:
+            self._file.close()
             self._file = None
+
+    def read(self, *args, **kwargs):
+        if self._file:
+            yield self._file.read(*args, **kwargs)
+            self._file.seek(0)
 
     @property
     def file(self):
@@ -65,11 +78,12 @@ class AudioFile:
     @file.setter
     def file(self, file):
         self._file = sf(file)
+        self._channels = self._file.channels
+        self._samplerate = self._file.samplerate
         if not self.blocksize:
-            self.blocksize = self._file.samplerate
-            self.analyze()
-            # LOGGER.info('Finished Analyzing channel properties: channel == %s; empty == %s; fake == %s;', self.channel, self.isEmpty, self.isFakeStereo)
-            self._file.seek(0)
+            self.blocksize = self._samplerate
+        self.analyze()
+        self._file.seek(0)
 
     filename = property(lambda self: self._filename)
 
@@ -77,7 +91,9 @@ class AudioFile:
 
     countValidChannel = property(lambda self: bin(self.validChannel).count("1"))
 
-    channels = property(lambda self: self._file.channels if self._file else 0)
+    channels = property(
+        lambda self: self._file.channels if self._file else self._channels
+    )
 
     flag = property(lambda self: self._flag)
 
@@ -85,9 +101,14 @@ class AudioFile:
 
     sample = property(lambda self: self._sample)
 
+    samplerate = property(lambda self: self._samplerate)
+
     isEmpty = property(lambda self: self.validChannel == 0 or self.channels == 0)
 
-    isMono = property(lambda self: (self.isCorrelated or self.countValidChannel == 1) and not self.isEmpty)
+    isMono = property(
+        lambda self: (self.isCorrelated or self.countValidChannel == 1)
+        and not self.isEmpty
+    )
 
     isFakeStereo = property(lambda self: self.isMono and self.channels == 2)
 
@@ -126,18 +147,97 @@ class AudioFile:
             return flag
 
     def _analyze_blocks(self):
-        info = None
+        info = SampleblockChannelInfo(
+            flag=None, isCorrelated=None, sample=None, threshold=self.NULL_THRESHOLD
+        )
         for sampleblock in self.file.blocks(blocksize=self.blocksize, always_2d=True):
-            info = self._get_channel_info_from_sampleblock(sampleblock, info)
+            info.set_info(sampleblock)
         return info
 
-    def _get_channel_info_from_sampleblock(self, sampleblock, info=None):
-        if info is None:
-            info = {
-                "flag": None,
-                "isCorrelated": None,
-                "sample": None,
-                "threshold": self.NULL_THRESHOLD,
-            }
-        info["sampleblock"] = sampleblock
-        return SampleblockChannelInfo(**info)
+    def backup(self, folder="bak", newfolder=True, replace=False, noAction=False):
+        def join(*args, inc="", ext=""):
+            return (
+                os.path.join(*args).rstrip("\\")
+                + (inc if inc != "0" else "")
+                + ("." + ext if ext else "")
+            )
+
+        def unique(*args, new=False, **kwargs):
+            if not new:
+                return join(*args, **kwargs)
+            name = ""
+            i = 0
+            while os.path.exists(name := join(*args, inc=str(i), **kwargs)):
+                i += 1
+            return name
+
+        oldpath, filename = os.path.split(self._filename)
+        bakpath, bakfolder = os.path.split(folder)
+        path = bakpath if bakpath != "" else oldpath
+
+        foldername = unique(path, bakfolder, new=newfolder)
+        if not os.path.exists(foldername) and not noAction:
+            os.makedirs(foldername)
+
+        filename, ext = filename.split('.')
+        newfile = unique(foldername, filename, new=(not replace), ext=ext)
+        if not noAction:
+            shutil.copyfile(self._filename, newfile)
+        return newfile
+
+    def monolize(self, channel=None):
+        if self.file and (channel or self.isFakeStereo):
+            channel = channel or self._validChannel
+            data = [x[channel] for x in self.file.read()]
+            self.file.close()
+            st = self.file.subtype
+            ed = self.file.endian
+            fm = self.file.format
+            with sf(self._filename, "w", self._samplerate, 1, st, ed, fm, True) as f:
+                f.write(data)
+            self.file = self.filename
+
+    def remove(self, forced=False):
+        if self.file and (forced or self.isEmpty):
+            self.close()
+            os.remove(self._filename)
+
+    def split(self, delimiter="."):
+        if self.file and self.channels == 2:
+            path, ext = os.path.splitext(self._filename)
+            for i, ch in enumerate(["L", "R"]):
+                self.file.seek(0)
+                data = self.file.read()[i]
+                st = self.file.subtype
+                ed = self.file.endian
+                fm = self.file.format
+                with sf(path+delimiter+ch+ext, "w", self._samplerate, 1, st, ed, fm, True) as f:
+                    f.write(data)
+            self.remove(forced=True)
+
+    def join(self, other=None, remove=True):
+        path, ext = os.path.splitext(self._filename)
+        if s := re.match(r"(.+)([^\a])([lL]|[rR])$", path):
+            base, delimiter, ch = s.groups()
+            chs = ["L", "R"]
+            chnum = chs.index(ch)
+            data = self.file.read(always_2d=True)
+            chs.remove(ch)
+            newfile = base + delimiter + chs[0] + ext
+            if not os.path.exists(newfile):
+                return
+            with AudioFile(newfile) as f:
+                if chnum:
+                    data = np.concatenate((f.file.read(always_2d=True), data), axis=1)
+                else:
+                    data = np.concatenate((data, f.file.read(always_2d=True)), axis=1)
+                if remove:
+                    f.remove()
+            st = self.file.subtype
+            ed = self.file.endian
+            fm = self.file.format
+            with sf(base+ext, "w", self._samplerate, 2, st, ed, fm, True) as f:
+                f.write(data)
+            if remove:
+                self.close()
+                os.remove(self._filename)

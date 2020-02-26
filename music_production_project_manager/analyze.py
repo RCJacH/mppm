@@ -32,20 +32,20 @@ class SampleblockChannelInfo:
         noisefloor -- The lowest bit that contains information
         channels -- number of audio channels
         """
-        self.flag = flag != None and flag
+        self.flag = flag
         self.isCorrelated = isCorrelated
-        self.sample = sample != None and sample
+        self.sample = sample
         self.NULL_THRESHOLD = threshold
         self.noisefloor = noisefloor
-        if type(sampleblock) is np.ndarray and sampleblock.size:
-            self.set_info(sampleblock)
+        self.set_info(sampleblock)
 
     def set_info(self, sampleblock):
-        self.set_channelblock(sampleblock)
-        self.set_channels()
-        self.set_flag()
-        self.set_correlation(self.channelblock)
-        self.set_sample(sampleblock)
+        if type(sampleblock) is np.ndarray and sampleblock.size:
+            self.set_channelblock(sampleblock)
+            self.set_channels()
+            self.set_flag()
+            self.set_correlation(self.channelblock)
+            self.set_sample(sampleblock)
         # self.set_noisefloor(sampleblock)
 
     def set_channelblock(self, sampleblock):
@@ -61,6 +61,8 @@ class SampleblockChannelInfo:
 
     def set_flag(self):
         """Flag on for each channel that contains a sounding sample"""
+        if self.flag is None:
+            self.flag = 0
         [
             self.flag_on(i + 1)
             for i, v in enumerate(self.channelblock)
@@ -78,11 +80,7 @@ class SampleblockChannelInfo:
     def set_correlation(self, channelblock):
         """Check whether audio is panned mono"""
         if self.isCorrelated is not False:
-            self.isCorrelated = (
-                True
-                if self.channels < 2
-                else self._is_channelblock_correlated(channelblock)
-            )
+            self.isCorrelated = self.channels < 2 or self._is_channelblock_correlated(channelblock)
 
     def _is_channelblock_correlated(self, channelblock):
         ratios = [self._get_ratio(samples) for samples in channelblock]
