@@ -201,7 +201,6 @@ class AudioFile:
         if self.file and (forced or self.isEmpty):
             self.close()
             os.remove(self._filename)
-            del self
 
     def split(self, delimiter="."):
         if self.file and self.channels == 2:
@@ -216,7 +215,7 @@ class AudioFile:
                     f.write(data)
             self.remove(forced=True)
 
-    def join(self, other=None):
+    def join(self, other=None, remove=True):
         path, ext = os.path.splitext(self._filename)
         if s := re.match(r"(.+)([^\a])([lL]|[rR])$", path):
             base, delimiter, ch = s.groups()
@@ -225,14 +224,20 @@ class AudioFile:
             data = self.file.read(always_2d=True)
             chs.remove(ch)
             newfile = base + delimiter + chs[0] + ext
-            if os.path.exists(newfile):
-                with AudioFile(newfile) as f:
-                    if chnum:
-                        data = np.concatenate((f.file.read(always_2d=True), data), axis=1)
-                    else:
-                        data = np.concatenate((data, f.file.read(always_2d=True)), axis=1)
+            if not os.path.exists(newfile):
+                return
+            with AudioFile(newfile) as f:
+                if chnum:
+                    data = np.concatenate((f.file.read(always_2d=True), data), axis=1)
+                else:
+                    data = np.concatenate((data, f.file.read(always_2d=True)), axis=1)
+                if remove:
+                    f.remove()
             st = self.file.subtype
             ed = self.file.endian
             fm = self.file.format
             with sf(base+ext, "w", self._samplerate, 2, st, ed, fm, True) as f:
                 f.write(data)
+            if remove:
+                self.close()
+                os.remove(self._filename)

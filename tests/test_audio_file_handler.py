@@ -171,7 +171,7 @@ class TestAudioFile:
         file, _ = tmp_file
         with AudioFile(filename=file) as obj:
             obj.remove(**params)
-        assert os.path.isfile(file) == result
+        assert os.path.exists(file) == result
 
     @pytest.mark.parametrize(
         "tmp_file, params, isSplit",
@@ -184,23 +184,30 @@ class TestAudioFile:
         path, ext = os.path.splitext(file)
         with AudioFile(filename=file) as obj:
             obj.split(**params)
-        assert os.path.isfile(file) != isSplit
+        assert os.path.exists(file) != isSplit
         for ch in (".L", ".R"):
-            assert os.path.isfile(path + ch + ext) == isSplit
+            assert os.path.exists(path + ch + ext) == isSplit
 
     @pytest.mark.parametrize(
-        "params, result", [({"delimiter": ".", "chFlag": 3}, True), ({"delimiter": ".", "chFlag": 3, "chSelect": "R"}, True)],
+        "params, result",
+        [
+            ({"delimiter": ".", "chFlag": 3}, True),
+            ({"delimiter": ".", "chFlag": 3, "chSelect": "R"}, True),
+            ({"delimiter": ".", "chFlag": 2, "chSelect": 'R'}, False),
+            ({"delimiter": "_", "chFlag": 3,}, True),
+            ({"delimiter": ".", "chFlag": 1}, False),
+        ],
     )
     def test_join(self, params, result, tmp_file):
         file, testfile = tmp_file
         path, ext = os.path.splitext(file)
         basename = path + params.pop("delimiter")
         chFlag = params.pop("chFlag") if "chFlag" in params else 0
-        for i, v in enumerate(bin(chFlag)[2:]):
+        for i, v in enumerate(bin(chFlag)[-1:1:-1]):
             if v == "1":
                 shutil.copyfile(file, basename + ["L", "R"][i] + ext)
         os.remove(file)
-        assert not os.path.isfile(file)
+        assert not os.path.exists(file)
         chSelect = (
             params.pop("chSelect")
             if "chSelect" in params
@@ -208,4 +215,5 @@ class TestAudioFile:
         )
         with AudioFile(filename=basename + chSelect + ext) as obj:
             obj.join(**params)
-        assert os.path.isfile(file) == result
+        assert os.path.exists(file) == result
+        assert os.path.exists(basename + chSelect + ext) != result
