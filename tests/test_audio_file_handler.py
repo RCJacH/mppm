@@ -3,15 +3,32 @@ Tests for 'analyze' module
 """
 import pytest
 import os
+import shutil
 import numpy as np
 from music_production_project_manager.audio_file_handler import AudioFile
 from soundfile import SoundFile as sf
+from soundfile import read
 
-def get_audio_path(name):
-    return os.path.join("tests", "audio_files", name + ".wav")
+
+def get_audio_path(name, ext=".wav"):
+    return os.path.join("tests", "audio_files", name + ext)
+
+
+@pytest.fixture(scope="function")
+def tmp_file(request, tmp_path):
+    try:
+        filename = request.param
+    except AttributeError:
+        filename = "sin-m"
+    testfile = get_audio_path(filename)
+    file = os.path.join(tmp_path, os.path.split(testfile)[1])
+    shutil.copyfile(testfile, file)
+    yield (file, testfile)
+
 
 class AudioInfo(object):
     def __init__(self, shape):
+        self.shape = shape
         self.filename = get_audio_path(shape)
         self.src = AudioFile(self.filename)
         self.isCorrelated = False if ("+" in shape or "100" in shape) else True
@@ -19,13 +36,7 @@ class AudioInfo(object):
         self.isMono = False if (self.isEmpty or "+" in shape) else True
         self.channels = 1 if "-m" in shape else 2
         self.validChannel = (
-            0
-            if "0-" in shape
-            else 3
-            if "+" in shape
-            else 2
-            if "r" in shape
-            else 1
+            0 if "0-" in shape else 3 if "+" in shape else 2 if "r" in shape else 1
         )
         self.flag = (
             0 if self.isEmpty else 1 if "-m" in shape else 2 if "-r100" in shape else 3
@@ -76,6 +87,133 @@ class TestAudioFile:
             assert src.isMultichannel == False
 
     def test__enter__exit(self):
-        with AudioFile(get_audio_path("empty")) as src:
-            assert src.file is not None
-        assert src.file is None
+        with AudioFile(get_audio_path("empty")) as obj:
+            assert obj.file is not None
+            assert obj.channels == 1
+        assert obj.file is None
+        assert obj.channels == 1
+
+    @pytest.mark.parametrize(
+        "params, result",
+        [
+            pytest.param({}, ("bak", "sin-m.wav"), id="default"),
+            pytest.param(
+                {"folderExists": True}, ("bak1", "sin-m.wav"), id="inc-foldername"
+            ),
+            pytest.param(
+                {"fileExists": True}, ("bak", "sin-m1.wav"), id="inc-filename"
+            ),
+            pytest.param(
+                {"fileExists": True, "replace": True},
+                ("bak", "sin-m.wav"),
+                id="replace",
+            ),
+        ],
+    )
+    def test_backup(self, params, result, tmp_file):
+        file, testfile = tmp_file
+        filename = os.path.split(testfile)[1]
+        tmppath = os.path.split(file)[0]
+        bakpath = os.path.join(tmppath, "bak")
+        if "folderExists" in params:
+            os.makedirs(bakpath)
+            bakpath += "1"
+            params.pop("folderExists")
+        if "fileExists" in params:
+            os.makedirs(bakpath)
+            with open(os.path.join(bakpath, filename), "w") as f:
+                f.write("")
+            params.pop("fileExists")
+            params["newfolder"] = False
+        with AudioFile(file) as obj:
+            if "noAction" in params:
+                assert obj.backup(**params) == result
+            else:
+                f = obj.backup(**params)
+                newf = os.path.join(tmppath, *result)
+                assert f == newf
+                assert os.path.exists(newf)
+
+    @pytest.mark.parametrize(
+        "tmp_file, params, result",
+        [
+            ("sin-s", {}, True),
+            ("sin+tri", {}, True),
+            ("sin+tri", {"channel": 1}, False),
+        ],
+        indirect=["tmp_file"],
+    )
+    def test_monolize(self, tmp_file, params, result):
+        file, testfile = tmp_file
+        with AudioFile(filename=file) as obj:
+            obj.monolize(**params)
+            assert (
+                np.all(
+                    np.equal(
+                        read(testfile, always_2d=True)[0],
+                        list(obj.read(always_2d=True)),
+                    )
+                )
+                == result
+            )
+
+    @pytest.mark.parametrize(
+        "tmp_file, params, result",
+        [
+            ("empty", {}, False),
+            ("0-s", {}, False),
+            ("sin-m", {}, True),
+            ("sin-m", {"forced": True}, False),
+        ],
+        indirect=["tmp_file"],
+    )
+    def test_remove(self, tmp_file, params, result):
+        file, _ = tmp_file
+        with AudioFile(filename=file) as obj:
+            obj.remove(**params)
+        assert os.path.exists(file) == result
+
+    @pytest.mark.parametrize(
+        "tmp_file, params, isSplit",
+        [("sin-s", {}, True), ("sin-m", {}, False), ("empty", {}, False)],
+        indirect=["tmp_file"],
+    )
+    def test_split(self, tmp_file, params, isSplit):
+        file = tmp_file[0]
+        _, filename = os.path.split(file)
+        path, ext = os.path.splitext(file)
+        with AudioFile(filename=file) as obj:
+            obj.split(**params)
+        assert os.path.exists(file) != isSplit
+        for ch in (".L", ".R"):
+            assert os.path.exists(path + ch + ext) == isSplit
+
+    @pytest.mark.parametrize(
+        "params, result",
+        [
+            ({"delimiter": ".", "chFlag": 3}, True),
+            ({"delimiter": ".", "chFlag": 3, "chSelect": "R"}, True),
+            ({"delimiter": ".", "chFlag": 2, "chSelect": 'R'}, False),
+            ({"delimiter": "_", "chFlag": 3,}, True),
+            ({"delimiter": ".", "chFlag": 1}, False),
+        ],
+    )
+    def test_join(self, params, result, tmp_file):
+        file, testfile = tmp_file
+        path, ext = os.path.splitext(file)
+        basename = path + params.pop("delimiter")
+        chFlag = params.pop("chFlag") if "chFlag" in params else 0
+        for i, v in enumerate(bin(chFlag)[-1:1:-1]):
+            if v == "1":
+                shutil.copyfile(file, basename + ["L", "R"][i] + ext)
+        os.remove(file)
+        assert not os.path.exists(file)
+        chSelect = (
+            params.pop("chSelect")
+            if "chSelect" in params
+            else (1 if chFlag > 3 else "L")
+        )
+        with AudioFile(filename=basename + chSelect + ext) as obj:
+            obj.join(**params)
+        assert os.path.exists(file) == result
+        assert os.path.exists(basename + chSelect + ext) != result
