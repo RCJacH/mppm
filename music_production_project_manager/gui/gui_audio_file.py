@@ -1,11 +1,12 @@
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
-
+from music_production_project_manager.folder_handler import FileList
 
 class FolderBrowser(tk.Frame):
     def __init__(self, master=None, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
+        self._FileList = FileList()
         self.master = master
         self.pack()
         self.path = ""
@@ -20,6 +21,9 @@ class FolderBrowser(tk.Frame):
                 address.delete(0, tk.END)
                 address.insert(0, path)
 
+        def analyze_button():
+            self._FileList.search_folder(self.path)
+
         frame = ttk.Frame(self)
         left = ttk.Frame(frame)
         mid = ttk.Frame(frame)
@@ -32,7 +36,7 @@ class FolderBrowser(tk.Frame):
         browse = ttk.Button(left, text="Browse", command=lambda: browse_button(address))
         browse.pack(side=tk.LEFT)
 
-        analyze = ttk.Button(right, text="Analyze")
+        analyze = ttk.Button(right, text="Analyze", command=analyze_button)
         analyze.pack(side=tk.RIGHT, expand=True, fill=tk.BOTH)
         left.pack(side=tk.LEFT, expand=False, fill=tk.Y)
         right.pack(side=tk.RIGHT, expand=False, fill=tk.Y)
@@ -53,8 +57,8 @@ class FolderBrowser(tk.Frame):
         tree.column("#2", width=64, stretch=False, anchor=tk.N)
         tree.heading("Action", text="Action")
         tree.column("Action", width=128, stretch=False, anchor=tk.N)
-        # for i in range(20):
-            # self.file_tree.insert('', "end", text=str(i))
+        for filename in self._FileList.filenames:
+            tree.insert('', "end", text=filename)
 
         self.file_list_frame = frame
         self.file_list_frame.pack(side=tk.TOP)

@@ -38,7 +38,8 @@ class FileList:
 
     def __init__(self, folder=None, options=None):
         self._folderpath = folder
-        self._options = options
+        self._options = options or {}
+        self._files = []
         # self.filenames = []
         # self.empty_files = []
         # self.mono_files = []
@@ -62,6 +63,9 @@ class FileList:
         return [AudioFile(os.path.join(folder, f),
                         **self._options,
                         ) for f in self._list_audio_files(folder)]
+
+    def new_options(self, options):
+        self._options = options
 
     files = property(lambda self: self._files)
 
