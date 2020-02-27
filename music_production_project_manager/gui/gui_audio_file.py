@@ -68,9 +68,3 @@ class FolderBrowser(tk.Frame):
 
     def display_actions(self):
         pass
-
-
-if __name__ == "__main__":
-    root = tk.Tk()
-    cls = FolderBrowser(root)
-    root.mainloop()
