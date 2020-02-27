@@ -23,6 +23,9 @@ class FolderBrowser(tk.Frame):
 
         def analyze_button():
             self._FileList.search_folder(self.path)
+            self.file_tree.delete(*self.file_tree.get_children())
+            for filename in self._FileList.filenames:
+                self.file_tree.insert('', "end", text=filename)
 
         frame = ttk.Frame(self)
         left = ttk.Frame(frame)
@@ -57,8 +60,6 @@ class FolderBrowser(tk.Frame):
         tree.column("#2", width=64, stretch=False, anchor=tk.N)
         tree.heading("Action", text="Action")
         tree.column("Action", width=128, stretch=False, anchor=tk.N)
-        for filename in self._FileList.filenames:
-            tree.insert('', "end", text=filename)
 
         self.file_list_frame = frame
         self.file_list_frame.pack(side=tk.TOP)
