@@ -73,6 +73,8 @@ class FileList:
 
     filenames = property(lambda self: [f.filename for f in self.files])
 
+    filepaths = property(lambda self: [f.filepath for f in self.files])
+
     empty_files = property(lambda self: [f for f in self.files if f.isEmpty])
 
     fake_stereo_files = property(lambda self: [f for f in self.files if f.isFakeStereo])

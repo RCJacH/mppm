@@ -7,6 +7,19 @@ def get_audio_path(filename=""):
     return os.path.join("tests", "audio_files", filename)
 
 
+audio_files = [
+    "0-m",
+    "0-s",
+    "empty",
+    "sin-l50",
+    "sin-m",
+    "sin-r25",
+    "sin-r100",
+    "sin-s",
+    "sin+tri",
+]
+
+
 class TestFileList:
     @pytest.mark.parametrize(
         "options, result",
@@ -16,19 +29,9 @@ class TestFileList:
                 {},
                 {
                     "fileCount": 9,
-                    "filenames": [
-                        get_audio_path(filename=x + ".wav")
-                        for x in (
-                            "0-m",
-                            "0-s",
-                            "empty",
-                            "sin-l50",
-                            "sin-m",
-                            "sin-r25",
-                            "sin-r100",
-                            "sin-s",
-                            "sin+tri",
-                        )
+                    "filenames": [x + ".wav" for x in audio_files],
+                    "filepaths": [
+                        get_audio_path(filename=x + ".wav") for x in audio_files
                     ],
                 },
             ),

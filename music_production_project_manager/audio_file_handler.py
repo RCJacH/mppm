@@ -19,15 +19,15 @@ LOGGER = logging.getLogger(__name__)
 class AudioFile:
     def __init__(
         self,
-        filename=None,
+        filepath=None,
         blocksize=None,
         debug=False,
         threshold=0.0001,
         analyze=True,
         action=None,
     ):
-        LOGGER.info("Initiating file: %s", filename)
-        self._filename = filename
+        LOGGER.info("Initiating file: %s", filepath)
+        self._filepath = filepath
         self._file = None
         self.blocksize = blocksize
         self._channels = None
@@ -38,9 +38,10 @@ class AudioFile:
         self._sample = None
         self._samplerate = None
         self.NULL_THRESHOLD = threshold
-        if filename is not None:
+        if filepath is not None:
             try:
-                self.file = filename
+                self._path, self._filename = os.path.split(filepath)
+                self.file = filepath
             except RuntimeError:
                 self.close()
 
@@ -48,8 +49,8 @@ class AudioFile:
         self.close()
 
     def __enter__(self):
-        if self._file is None and self._filename is not None:
-            self.file = self._filename
+        if self._file is None and self._filepath is not None:
+            self.file = self._filepath
         return self
 
     def __exit__(self, *args):
@@ -84,6 +85,10 @@ class AudioFile:
             self.blocksize = self._samplerate
         self.analyze()
         self._file.seek(0)
+
+    filepath = property(lambda self: self._filepath)
+
+    path = property(lambda self: self._path)
 
     filename = property(lambda self: self._filename)
 
@@ -159,7 +164,7 @@ class AudioFile:
             return (
                 os.path.join(*args).rstrip("\\")
                 + (inc if inc != "0" else "")
-                + ("." + ext if ext else "")
+                + (ext if ext else "")
             )
 
         def unique(*args, new=False, **kwargs):
@@ -171,18 +176,17 @@ class AudioFile:
                 i += 1
             return name
 
-        oldpath, filename = os.path.split(self._filename)
         bakpath, bakfolder = os.path.split(folder)
-        path = bakpath if bakpath != "" else oldpath
+        path = bakpath if bakpath != "" else self.path
 
         foldername = unique(path, bakfolder, new=newfolder)
         if not os.path.exists(foldername) and not noAction:
             os.makedirs(foldername)
 
-        filename, ext = filename.split('.')
+        filename, ext = os.path.splitext(self._filename)
         newfile = unique(foldername, filename, new=(not replace), ext=ext)
         if not noAction:
-            shutil.copyfile(self._filename, newfile)
+            shutil.copyfile(self._filepath, newfile)
         return newfile
 
     def monolize(self, channel=None):
@@ -193,18 +197,18 @@ class AudioFile:
             st = self.file.subtype
             ed = self.file.endian
             fm = self.file.format
-            with sf(self._filename, "w", self._samplerate, 1, st, ed, fm, True) as f:
+            with sf(self._filepath, "w", self._samplerate, 1, st, ed, fm, True) as f:
                 f.write(data)
-            self.file = self.filename
+            self.file = self._filepath
 
     def remove(self, forced=False):
         if self.file and (forced or self.isEmpty):
             self.close()
-            os.remove(self._filename)
+            os.remove(self._filepath)
 
     def split(self, delimiter="."):
         if self.file and self.channels == 2:
-            path, ext = os.path.splitext(self._filename)
+            path, ext = os.path.splitext(self._filepath)
             for i, ch in enumerate(["L", "R"]):
                 self.file.seek(0)
                 data = self.file.read()[i]
@@ -216,7 +220,7 @@ class AudioFile:
             self.remove(forced=True)
 
     def join(self, other=None, remove=True):
-        path, ext = os.path.splitext(self._filename)
+        path, ext = os.path.splitext(self._filepath)
         if s := re.match(r"(.+)([^\a])([lL]|[rR])$", path):
             base, delimiter, ch = s.groups()
             chs = ["L", "R"]
@@ -240,4 +244,4 @@ class AudioFile:
                 f.write(data)
             if remove:
                 self.close()
-                os.remove(self._filename)
+                os.remove(self._filepath)
