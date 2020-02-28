@@ -103,13 +103,22 @@ class AudioFile:
             self._action = v
 
     def proceed(self, options={}):
+        if not ("noBackup" in options and options.pop("noBackup")):
+            o = {"newfolder": False}
+            if "folder" in options:
+                o["folder"] = options.pop("folder")
+            if "replace" in options:
+                o["replace"] = options.pop("replace")
+            self.backup(**o)
         if self._action == "D":
             if self.isFakeStereo:
                 self.monolize()
             elif self.isEmpty:
                 self.remove()
         if self._action == "M":
-            self.monolize(channel=options.pop("channel") if "channel" in options else None)
+            self.monolize(
+                channel=options.pop("channel") if "channel" in options else None
+            )
         if self._action == "D":
             self.remove(forced=True)
         if self._action == "S":
@@ -232,7 +241,11 @@ class AudioFile:
 
     def monolize(self, channel=None):
         if self.file and (channel or self.isFakeStereo):
-            channel = channel or self._validChannel
+            channel = channel or (
+                self.countValidChannel == 1
+                and bin(self._validChannel)[2:].index("1")
+                or self._sample.index(max(self._sample))
+            )
             data = [x[channel] for x in self.file.read()]
             self.file.close()
             st = self.file.subtype
