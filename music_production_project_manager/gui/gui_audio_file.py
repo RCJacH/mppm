@@ -107,8 +107,7 @@ class FolderBrowser(tk.Frame):
 
     def display_actions(self):
         def proceed_button():
-            for file in self._FileList.files:
-                file.proceed()
+            self._FileList.proceed()
 
         frame = ttk.Frame(self)
         proceed = ttk.Button(frame, text="Proceed", command=proceed_button)

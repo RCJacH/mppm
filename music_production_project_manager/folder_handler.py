@@ -67,6 +67,10 @@ class FileList:
     def new_options(self, options):
         self._options = options
 
+    def proceed(self):
+        for file in self._files:
+            file.proceed(options=self._options)
+
     files = property(lambda self: self._files)
 
     fileCount = property(lambda self: len(self.files))
@@ -80,6 +84,8 @@ class FileList:
     fake_stereo_files = property(lambda self: [f for f in self.files if f.isFakeStereo])
 
     multichannel_files = property(lambda self: [f for f in self.files if f.isMultichannel])
+
+    options = property(lambda self: self._options)
 
     def _list_audio_files(self, folder):
         return [f for f in os.listdir(folder) if self._is_audio_file(f)]
