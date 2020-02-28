@@ -110,12 +110,19 @@ class AudioFile:
 
     isEmpty = property(lambda self: self.validChannel == 0 or self.channels == 0)
 
-    isMono = property(
+    isMono = property(lambda self: self.channels == 1 and not self.isEmpty)
+
+    isFakeStereo = property(
         lambda self: (self.isCorrelated or self.countValidChannel == 1)
+        and self.channels == 2
         and not self.isEmpty
     )
 
-    isFakeStereo = property(lambda self: self.isMono and self.channels == 2)
+    isStereo = property(
+        lambda self: self.channels == 2
+        and self.countValidChannel == 2
+        and not self.isCorrelated
+    )
 
     isMultichannel = property(
         lambda self: self.channels > 2

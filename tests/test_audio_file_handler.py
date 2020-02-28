@@ -31,17 +31,17 @@ class AudioInfo(object):
         self.shape = shape
         self.filepath = get_audio_path(shape)
         self.src = AudioFile(self.filepath)
+        self.channels = 1 if "-m" in shape else 2
         self.isCorrelated = False if ("+" in shape or "100" in shape) else True
         self.isEmpty = shape[0] == "0"
-        self.isMono = False if (self.isEmpty or "+" in shape) else True
-        self.channels = 1 if "-m" in shape else 2
+        self.isMono = self.channels == 1 and not self.isEmpty
         self.validChannel = (
             0 if "0-" in shape else 3 if "+" in shape else 2 if "r" in shape else 1
         )
         self.flag = (
             0 if self.isEmpty else 1 if "-m" in shape else 2 if "-r100" in shape else 3
         )
-        self.isFakeStereo = self.isMono and self.channels == 2
+        self.isFakeStereo = not (self.isEmpty or "+" in shape) and self.channels == 2
         self.isMultichannel = shape[-1] == "n" or shape.count("+") > 1
 
     def __enter__(self):
