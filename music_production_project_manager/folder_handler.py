@@ -1,12 +1,10 @@
 import os
+import shutil
 from music_production_project_manager.audio_file_handler import AudioFile
 
 
-
-
-
 extensions = [".wav", ".wave"]
-'''
+"""
 Potential additions supported by PySoundFile library
 {'AIFF': 'AIFF (Apple/SGI)',
  'AU': 'AU (Sun/NeXT)',
@@ -33,12 +31,17 @@ Potential additions supported by PySoundFile library
  'WAVEX': 'WAVEX (Microsoft)',
  'WVE': 'WVE (Psion Series 3)',
  'XI': 'XI (FastTracker 2)'}
-'''
-class FileList:
+"""
 
+
+class FileList:
     def __init__(self, folder=None, options=None):
         self._folderpath = folder
-        self._options = options or {}
+        self._options = options or {
+            "noBackup": False,
+            "backup": {},
+            "threshold": 0.00001,
+        }
         self._files = []
         # self.filenames = []
         # self.empty_files = []
@@ -49,7 +52,6 @@ class FileList:
         if folder and os.path.exists(folder):
             self.search_folder(folder)
 
-
     def __enter__(self):
         return self
 
@@ -57,19 +59,56 @@ class FileList:
         del self
 
     def search_folder(self, folder):
+        self._folderpath = folder
         self._files = self.populate(folder)
 
     def populate(self, folder):
-        return [AudioFile(os.path.join(folder, f),
-                        **self._options,
-                        ) for f in self._list_audio_files(folder)]
+        return [
+            AudioFile(os.path.join(folder, f), threshold=self._options["threshold"],)
+            for f in self._list_audio_files(folder)
+        ]
 
     def new_options(self, options):
-        self._options = options
+        self._options.update(options)
 
     def proceed(self):
+        if "noBackup" not in self._options or not self._options["noBackup"]:
+            if "backup" in self._options:
+                self.backup(**self._options["backup"])
+            else:
+                self.backup()
         for file in self._files:
             file.proceed(options=self._options)
+        self._files = self.populate(self._folderpath)
+
+    def backup(self, folder="bak", newFolder=True, replace=False, noAction=False):
+        def join(*args, inc="", ext=""):
+            return (
+                os.path.join(*args).rstrip("\\")
+                + (inc if inc != "0" else "")
+                + (ext if ext else "")
+            )
+
+        def unique(*args, new=False, **kwargs):
+            if not new:
+                return join(*args, **kwargs)
+            name = ""
+            i = 0
+            while os.path.exists(name := join(*args, inc=str(i), **kwargs)):
+                i += 1
+            return name
+
+        bakpath, bakfolder = os.path.split(folder)
+        path = self._folderpath if (not bakpath or bakpath.isspace) else bakpath
+        folderpath = unique(path, bakfolder, new=newFolder)
+        if not os.path.exists(folderpath) and not noAction:
+            os.makedirs(folderpath)
+
+        for file in self._files:
+            filename, ext = os.path.splitext(file._filename)
+            newfile = unique(folderpath, filename, new=(not replace), ext=ext)
+            if not noAction:
+                shutil.copyfile(file._filepath, newfile)
 
     files = property(lambda self: self._files)
 
@@ -83,7 +122,9 @@ class FileList:
 
     fake_stereo_files = property(lambda self: [f for f in self.files if f.isFakeStereo])
 
-    multichannel_files = property(lambda self: [f for f in self.files if f.isMultichannel])
+    multichannel_files = property(
+        lambda self: [f for f in self.files if f.isMultichannel]
+    )
 
     options = property(lambda self: self._options)
 
