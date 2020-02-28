@@ -241,11 +241,7 @@ class AudioFile:
 
     def monolize(self, channel=None):
         if self.file and (channel or self.isFakeStereo):
-            channel = channel or (
-                self.countValidChannel == 1
-                and bin(self._validChannel)[2:].index("1")
-                or self._sample.index(max(self._sample))
-            )
+            channel = channel or self._validChannel - 1
             data = [x[channel] for x in self.file.read()]
             self.file.close()
             st = self.file.subtype
