@@ -37,6 +37,7 @@ class AudioFile:
         self._isCorrelated = None
         self._sample = None
         self._samplerate = None
+        self._action = "D"
         self.NULL_THRESHOLD = threshold
         if filepath is not None:
             try:
@@ -85,6 +86,39 @@ class AudioFile:
             self.blocksize = self._samplerate
         self.analyze()
         self._file.seek(0)
+
+    @property
+    def action(self):
+        return {
+            "D": "Default",
+            "M": "Monoize",
+            "R": "Remove",
+            "S": "Split",
+            "J": "Join",
+        }[self._action]
+
+    @action.setter
+    def action(self, v):
+        if v in ("DMRSJ"):
+            self._action = v
+
+    def proceed(self, options={}):
+        if self._action == "D":
+            if self.isFakeStereo:
+                self.monolize()
+            elif self.isEmpty:
+                self.remove()
+        if self._action == "M":
+            self.monolize(channel=options.pop("channel") if "channel" in options else None)
+        if self._action == "D":
+            self.remove(forced=True)
+        if self._action == "S":
+            if "delimiter" in options:
+                self.split(delimiter=options.pop("delimiter"))
+            else:
+                self.split()
+        if self._action == "J":
+            self.join()
 
     filepath = property(lambda self: self._filepath)
 
@@ -222,7 +256,16 @@ class AudioFile:
                 st = self.file.subtype
                 ed = self.file.endian
                 fm = self.file.format
-                with sf(path+delimiter+ch+ext, "w", self._samplerate, 1, st, ed, fm, True) as f:
+                with sf(
+                    path + delimiter + ch + ext,
+                    "w",
+                    self._samplerate,
+                    1,
+                    st,
+                    ed,
+                    fm,
+                    True,
+                ) as f:
                     f.write(data)
             self.remove(forced=True)
 
@@ -247,7 +290,7 @@ class AudioFile:
             st = self.file.subtype
             ed = self.file.endian
             fm = self.file.format
-            with sf(base+ext, "w", self._samplerate, 2, st, ed, fm, True) as f:
+            with sf(base + ext, "w", self._samplerate, 2, st, ed, fm, True) as f:
                 f.write(data)
             if remove:
                 self.close()
