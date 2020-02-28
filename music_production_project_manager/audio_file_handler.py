@@ -24,7 +24,6 @@ class AudioFile:
         debug=False,
         threshold=0.0001,
         analyze=True,
-        action=None,
     ):
         LOGGER.debug(f"Initiating file: {self.__class__.__name__}, with filepath: {filepath}")
         self._filepath = filepath
@@ -103,13 +102,6 @@ class AudioFile:
             self._action = v
 
     def proceed(self, options={}):
-        if not ("noBackup" in options and options.pop("noBackup")):
-            o = {"newfolder": False}
-            if "folder" in options:
-                o["folder"] = options.pop("folder")
-            if "replace" in options:
-                o["replace"] = options.pop("replace")
-            self.backup(**o)
         if self._action == "D":
             if self.isFakeStereo:
                 self.monolize()
