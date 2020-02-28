@@ -8,11 +8,11 @@ from music_production_project_manager.analyze import SampleblockChannelInfo
 
 import logging
 
-logging.basicConfig(
+# logging.basicConfig(
     # handlers=[logging.FileHandler('build_json_list.log', 'w', 'utf-8')],
     # level=logging.INFO,
-    format="%(levelname)s:%(asctime)s:%(message)s"
-)
+    # format="%(levelname)s:%(asctime)s:%(message)s"
+# )
 LOGGER = logging.getLogger(__name__)
 
 
@@ -26,7 +26,7 @@ class AudioFile:
         analyze=True,
         action=None,
     ):
-        LOGGER.info("Initiating file: %s", filepath)
+        LOGGER.debug(f"Initiating file: {self.__class__.__name__}, with filepath: {filepath}")
         self._filepath = filepath
         self._file = None
         self.blocksize = blocksize
@@ -119,7 +119,7 @@ class AudioFile:
             self.monolize(
                 channel=options.pop("channel") if "channel" in options else None
             )
-        if self._action == "D":
+        if self._action == "R":
             self.remove(forced=True)
         if self._action == "S":
             if "delimiter" in options:
