@@ -102,16 +102,18 @@ class AudioFile:
             self._action = v
 
     def proceed(self, options={}):
+        noM = "skipMonoize" in options and options["skipMonoize"]
+        noR = "skipRemove" in options and options["skipRemove"]
         if self._action == "D":
-            if self.isFakeStereo:
-                self.monolize()
-            elif self.isEmpty:
+            if self.isFakeStereo and not noM:
+                self.monoize()
+            elif self.isEmpty and not noR:
                 self.remove()
-        if self._action == "M":
-            self.monolize(
+        if self._action == "M" and not noM:
+            self.monoize(
                 channel=options.pop("channel") if "channel" in options else None
             )
-        if self._action == "R":
+        if self._action == "R" and not noR:
             self.remove(forced=True)
         if self._action == "S":
             if "delimiter" in options:
@@ -231,7 +233,7 @@ class AudioFile:
             shutil.copyfile(self._filepath, newfile)
         return newfile
 
-    def monolize(self, channel=None):
+    def monoize(self, channel=None):
         if self.file and (channel or self.isFakeStereo):
             channel = channel or self._validChannel - 1
             data = [x[channel] for x in self.file.read()]

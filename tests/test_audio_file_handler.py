@@ -143,10 +143,10 @@ class TestAudioFile:
         ],
         indirect=["tmp_file"],
     )
-    def test_monolize(self, tmp_file, params, result):
+    def test_monoize(self, tmp_file, params, result):
         file, testfile = tmp_file
         with AudioFile(filepath=file) as obj:
-            obj.monolize(**params)
+            obj.monoize(**params)
             assert (
                 np.all(
                     np.equal(
