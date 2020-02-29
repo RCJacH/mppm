@@ -91,16 +91,17 @@ class FolderBrowser(tk.Frame):
         frame.pack(side=tk.TOP, expand=True, fill=tk.BOTH)
 
     def display_file_list(self):
-        x_width = 42
+        x_width = 44
         frame = ttk.Frame(self)
         tree = ttk.Treeview(
             frame,
+            selectmode='browse',
             columns=("Channels", "Empty", "Mono", "Fake", "Stereo", "Multi", "Action"),
         )
-        scroll = ttk.Scrollbar(frame, command=tree.yview)
-        tree.configure(yscroll=scroll)
+        scroll = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
+        tree.configure(yscroll=scroll, yscrollcommand=scroll.set)
         tree.heading("#0", text="Filename")
-        tree.column("#0", width=128, stretch=False)
+        tree.column("#0", width=128, stretch=True)
         tree.heading("#1", text="Channels")
         tree.column("#1", width=64, stretch=False, anchor=tk.N)
         tree.heading("Empty", text="Empty")
