@@ -15,6 +15,9 @@ class FolderBrowser(tk.Frame):
         self._FileList = FileList()
         self.master = master
         self.pack()
+        style = ttk.Style()
+        style.theme_use('clam')
+        print(style.layout('TButton'))
         self.path = ""
         self.noBackup = tk.BooleanVar()
         self.skipMonoize = tk.BooleanVar()
@@ -118,10 +121,10 @@ class FolderBrowser(tk.Frame):
         tree.column("Action", width=128, stretch=False, anchor=tk.N)
 
         self.file_list_frame = frame
-        self.file_list_frame.pack(side=tk.TOP)
+        self.file_list_frame.pack(side=tk.TOP, expand=True, fill=tk.BOTH)
         self.file_tree = tree
-        tree.pack(side=tk.LEFT, fill=tk.Y)
-        scroll.pack(side=tk.LEFT, fill=tk.Y)
+        tree.pack(side="left", expand=True, fill="both")
+        scroll.pack(side="right", fill="y")
 
     def display_actions(self):
         def proceed_command():
@@ -143,34 +146,28 @@ class FolderBrowser(tk.Frame):
             self.skipRemove = v
 
         frame = ttk.Frame(self)
-        top = tk.Frame(frame)
-        bottom = tk.Frame(frame)
+        top = ttk.Frame(frame)
+        bottom = ttk.Frame(frame)
         proceed = ttk.Button(bottom, text="Proceed", command=proceed_command)
         proceed.pack(side=tk.TOP, expand=True, fill=tk.BOTH)
-        backup = tk.Checkbutton(
+        backup = ttk.Checkbutton(
             top,
             text="Back up to sub-folder: ",
             variable=self.noBackup,
             onvalue=False,
             offvalue=True,
-            height=5,
-            width=20,
             command=lambda: backup_command(self.noBackup.get()),
         )
-        skipMonoize_button = tk.Checkbutton(
+        skipMonoize_button = ttk.Checkbutton(
             top,
             text="Skip Monoize",
             variable=self.skipMonoize,
-            height=5,
-            width=20,
             command=lambda: skipMonoize_command(self.skipMonoize.get()),
         )
-        skipRemove_button = tk.Checkbutton(
+        skipRemove_button = ttk.Checkbutton(
             top,
             text="Skip Monoize",
             variable=self.skipRemove,
-            height=5,
-            width=20,
             command=lambda: skipRemove_command(self.skipRemove.get()),
         )
         address = ttk.Entry(top, width=16)
