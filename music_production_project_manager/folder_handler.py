@@ -39,7 +39,7 @@ class FileList:
         self._folderpath = folder
         self._options = options or {
             "noBackup": False,
-            "backup": {},
+            "backup": {"folder": "bak"},
             "threshold": 0.00001,
         }
         self._files = []
@@ -68,7 +68,7 @@ class FileList:
             for f in self._list_audio_files(folder)
         ]
 
-    def new_options(self, options):
+    def update_options(self, options={}):
         self._options.update(options)
 
     def proceed(self):
