@@ -3,6 +3,7 @@ from functools import wraps
 import tkinter as tk
 from tkinter import ttk
 
+
 class Style:
     def __init__(self, data):
         self.data = data
@@ -54,28 +55,61 @@ class Style:
         return (self.fontface(), self.fonttag(key)[1])
 
 
-
 class BaseSetting:
-    def __init__(self):
+    def __init__(self, settings=None):
         self.settings = []
+        if settings is not None:
+            for k in settings:
+                self.settings.append(k)
+                setattr(self, k, settings[k])
 
     def __call__(self, key, value):
-        self.settings.append(key)
+        self[str(key)] = value
+
+    def __contains__(self, key):
+        return str(key) in self.settings
+
+    def __len__(self):
+        return len(self.settings)
+
+    def __getitem__(self, key):
+        return getattr(self, str(key))
+
+    def __setitem__(self, key, value):
+        if key not in self:
+            self.settings.append(key)
         setattr(self, key, value)
 
     def asdict(self):
-        return {self.__class__.__name__.lower(): {k: getattr(self, k) for k in self.settings}}
+        return {
+            self.__class__.__name__.lower(): {
+                k: getattr(self, k) for k in self.settings
+            }
+        }
+
 
 class Configure(BaseSetting):
     pass
 
 
-
 class Map(BaseSetting):
     def __call__(self, key, value, fixed=None, flex=None):
-        flexmatrix = [(x, f"!{x}") for x in flex]
-        states = [tuple(x) for x in flexmatrix]
+        if flex:
+            flexmatrix = [[x, f"!{x}"] for x in flex]
+            r = [[]]
+            for x in flexmatrix:
+                r = [i + [y] for y in x for i in r]
+            states = [
+                tuple(
+                    sorted((fixed or []) + x, key=lambda x: x.replace("!", ""))
+                    + [value]
+                )
+                for x in r
+            ]
+        else:
+            states = [tuple(sorted(fixed) + [value])]
         setattr(self, key, states)
+
 
 class Settings:
     def __init__(self):
@@ -84,7 +118,7 @@ class Settings:
         pass
 
     def configure(self, key, **kw):
-        conf = {k:v for k, v in kw}
+        conf = {k: v for k, v in kw}
         if key not in self.widget_list:
             self.widget_list.append(key)
             self.widgets[key] = {}
