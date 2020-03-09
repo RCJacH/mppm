@@ -7,12 +7,6 @@ class ColorSample:
         self.themes = self.setup_theme()
         self.properties = self.setup_properties()
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *args):
-        del self
-
     def setup_theme(self):
         themes = (
             "red",
@@ -56,12 +50,6 @@ class TypographySample:
         self.tag = self.setup_tag()
         self.fontface = "fontface"
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *args):
-        del self
-
     def setup_tag(self):
         tags = ("h1", "h2", "h3", "h4", "h5", "h6", "p", "li", "ul", "ol")
         return {x: [f"style_{x}", f"size_{x}"] for x in tags}
@@ -73,13 +61,12 @@ class TypographySample:
 
 @pytest.fixture(scope="module")
 def color():
-    with ColorSample() as o:
-        yield core.Style(o.asdict())
+    return core.Style(ColorSample().asdict())
+
 
 @pytest.fixture(scope="module")
 def typography():
-    with TypographySample() as o:
-        yield core.Style(o.asdict())
+    return core.Style(TypographySample().asdict())
 
 
 class TestStyle:
@@ -124,7 +111,82 @@ class TestStyle:
     def test_typography_fontface(self, typography):
         assert typography.fontface() == "fontface"
 
-class TestConfigure:
 
-    def test_pass(self):
-        pass
+class TestConfigure:
+    @pytest.fixture(scope="function")
+    def configure(self):
+        yield core.Configure
+
+    @pytest.mark.parametrize(
+        "settings", [(None), ({"background": "#FFF", "foreground": "#000"}),]
+    )
+    def test__init__len__(self, configure, settings):
+        obj = configure(settings)
+        assert isinstance(obj.settings, list)
+        if settings:
+            assert len(obj) == len(settings)
+            assert all(obj[k] == settings[k] for k in settings)
+        else:
+            assert not len(obj)
+
+    @pytest.mark.parametrize(
+        "key, value", [("background", "#FFF"), ("padding", [1, 2, 3, 4])]
+    )
+    def test__call__contains__(self, configure, key, value):
+        obj = configure()
+        obj(key, value)
+        assert key in obj
+        assert obj[key] == value
+
+    def test_asdict(self, configure):
+        obj = configure()
+        obj("a", "aa")
+        obj("b", "bb")
+        assert obj.asdict() == {"configure": {"b": "bb", "a": "aa"}}
+
+
+class TestMap:
+    @pytest.fixture(scope="function")
+    def settingmap(self):
+        yield core.Map
+
+    @pytest.mark.parametrize(
+        "key, value, kwarg, result",
+        [
+            pytest.param("bg", "v", {"fixed": ["d"]}, [("d", "v")], id="single_fixed",),
+            pytest.param(
+                "bg", "v", {"fixed": ["d", "a"]}, [("a", "d", "v")], id="multi_fixed",
+            ),
+            pytest.param(
+                "bg", "v", {"flex": ["d"]}, [("d", "v"), ("!d", "v")], id="single_flex"
+            ),
+            pytest.param(
+                "bg",
+                "v",
+                {"flex": ["d", "a"]},
+                [
+                    ("a", "d", "v"),
+                    ("!a", "d", "v"),
+                    ("a", "!d", "v"),
+                    ("!a", "!d", "v"),
+                ],
+                id="multi_flex",
+            ),
+            pytest.param(
+                "bg",
+                "v",
+                {"fixed": ["f", "i"], "flex": ["d", "a"]},
+                [
+                    ("a", "d", "f", "i", "v"),
+                    ("!a", "d", "f", "i", "v"),
+                    ("a", "!d", "f", "i", "v"),
+                    ("!a", "!d", "f", "i", "v"),
+                ],
+                id="multi_all",
+            ),
+        ],
+    )
+    def test__call__(self, settingmap, key, value, kwarg, result):
+        obj = settingmap()
+        obj(key, value, **kwarg)
+        assert sorted(obj[key]) == sorted(result)
