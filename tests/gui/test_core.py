@@ -129,14 +129,22 @@ class TestConfigure:
         else:
             assert not len(obj)
 
-    @pytest.mark.parametrize(
-        "key, value", [("background", "#FFF"), ("padding", [1, 2, 3, 4])]
-    )
+    @pytest.mark.parametrize("key, value", [("bg", "#FFF"), ("padding", [1, 2, 3, 4])])
     def test__call__contains__(self, configure, key, value):
         obj = configure()
         obj(key, value)
         assert key in obj
         assert obj[key] == value
+
+    def test__call__key_only(self, configure):
+        obj = configure()
+        obj("k", "v")
+        assert obj("k") == "v"
+
+    def test__call__no_input(self, configure):
+        obj = configure()
+        obj("k", "v")
+        assert obj() == {"configure": {"k": "v"}}
 
     def test_asdict(self, configure):
         obj = configure()
@@ -190,3 +198,36 @@ class TestMap:
         obj = settingmap()
         obj(key, value, **kwarg)
         assert sorted(obj[key]) == sorted(result)
+
+    def test__call__no_input(self, settingmap):
+        init = {"bd": [("a", "d", "v")]}
+        obj = settingmap(init)
+        assert obj() == {"map": init}
+
+class TestSettings:
+    @pytest.fixture("function")
+    def settings(self):
+        yield core.Settings
+
+    def test__init__len__(self, settings):
+        init = {
+            "TLabel": {"configure": {"bg": "v"}},
+            "TButton": {"map": {"bd": [("a", "d", "v")]}},
+        }
+        obj = settings(init)
+        assert len(obj) == len(init)
+        assert all(k in obj for k in init)
+        # print(obj["TLabel"], obj["TButton"])
+        assert all(obj[k] == init[k] for k in init)
+
+    def test__init__len__None(self, settings):
+        obj = settings(None)
+        assert not len(obj)
+
+    def test__call__(self, settings):
+        init = {
+            "W": {"configure": {"k": "v"}},
+            "W2": {"map": {"k2": [("a", "d", "v2")]}},
+        }
+        obj = settings(init)
+        assert obj() == init
