@@ -217,7 +217,6 @@ class TestSettings:
         obj = settings(init)
         assert len(obj) == len(init)
         assert all(k in obj for k in init)
-        # print(obj["TLabel"], obj["TButton"])
         assert all(obj[k] == init[k] for k in init)
 
     def test__init__len__None(self, settings):
