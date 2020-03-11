@@ -1,9 +1,12 @@
+import math
 import os
 import shutil
 import re
 import numpy as np
+
 from soundfile import SoundFile as sf
 from soundfile import SEEK_END
+
 from music_production_project_manager.analyze import SampleblockChannelInfo
 
 import logging
@@ -22,7 +25,7 @@ class AudioFile:
         filepath=None,
         blocksize=None,
         debug=False,
-        threshold=0.0001,
+        threshold=-100,
         analyze=True,
     ):
         LOGGER.debug(f"Initiating file: {self.__class__.__name__}, with filepath: {filepath}")
@@ -37,7 +40,7 @@ class AudioFile:
         self._sample = None
         self._samplerate = None
         self._action = "D"
-        self.NULL_THRESHOLD = threshold
+        self.NULL_THRESHOLD = 10 ** (threshold / 20)
         if filepath is not None:
             try:
                 self._path, self._filename = os.path.split(filepath)
