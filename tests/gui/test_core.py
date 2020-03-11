@@ -146,6 +146,11 @@ class TestConfigure:
         obj("k", "v")
         assert obj() == {"configure": {"k": "v"}}
 
+    def test__call__input_0(self, configure):
+        obj = configure()
+        obj("k", 0)
+        assert obj("k") == 0
+
     def test_asdict(self, configure):
         obj = configure()
         obj("a", "aa")
@@ -217,7 +222,7 @@ class TestSettings:
         obj = settings(init)
         assert len(obj) == len(init)
         assert all(k in obj for k in init)
-        assert all(obj[k] == init[k] for k in init)
+        assert all(obj[k]() == init[k] for k in init)
 
     def test__init__len__None(self, settings):
         obj = settings(None)
