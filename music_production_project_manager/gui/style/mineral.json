@@ -317,7 +317,7 @@
             "ol": ["Regular", 10],
             "h5": ["Bold", 14],
             "h6": ["Bold", 12],
-            "h1": ["ExtraBold", 34],
+            "h1": ["Bold", 34],
             "h2": ["Bold", 28],
             "h3": ["Bold", 22],
             "h4": ["Bold", 18]
