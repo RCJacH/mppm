@@ -40,7 +40,7 @@ class FileList:
         self._options = options or {
             "noBackup": False,
             "backup": {"folder": "bak"},
-            "threshold": 0.00001,
+            "threshold": -100,
         }
         self._files = []
         # self.filenames = []
