@@ -153,11 +153,19 @@
 
         },
         "background": {
-            "regular": "white",
+            "regular": "gray_10",
+            "header": "gray_100",
+            "input": "white",
             "active": "gray_20",
-            "disabled": "gray_20",
+            "disabled": "gray_30",
             "focus": "white",
             "hover": "gray_10",
+            "action": {
+                "regular": "green_30",
+                "hover": "green_20",
+                "focus": "green_20",
+                "pressed": "green_10"
+            },
             "danger": {
                 "active": "red_20",
                 "focus": "red_10",
@@ -191,8 +199,8 @@
                 "focus": "bronze_60",
                 "hover": "bronze_50"
             },
-            "panel": {
-                "regular": "white",
+            "columnHeader": {
+                "regular": "gray_10",
                 "inverted": "gray_90"
             },
             "well": {
@@ -281,7 +289,7 @@
             "placeholder": "gray_60"
         },
         "panel": {
-            "background": "white",
+            "background": "gray_10",
             "background_inverted": "gray_90",
             "border": "gray_20",
             "border_inverted": "gray_90"
@@ -303,13 +311,13 @@
     "typography": {
         "font": "Open Sans",
         "tag": {
-            "p": ["Regular", 14],
-            "li": ["Regular", 14],
-            "ul": ["Regular", 14],
-            "ol": ["Regular", 14],
+            "p": ["Regular", 12],
+            "li": ["Regular", 12],
+            "ul": ["Regular", 10],
+            "ol": ["Regular", 10],
             "h5": ["Bold", 14],
-            "h6": ["Bold", 14],
-            "h1": ["ExtraBold", 34],
+            "h6": ["Bold", 12],
+            "h1": ["Bold", 34],
             "h2": ["Bold", 28],
             "h3": ["Bold", 22],
             "h4": ["Bold", 18]

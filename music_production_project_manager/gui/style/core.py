@@ -1,5 +1,3 @@
-from functools import wraps
-
 import tkinter as tk
 from tkinter import ttk
 
@@ -9,7 +7,6 @@ class Style:
         self.data = data
 
     def _search(func):
-        @wraps(func)
         def iterate(self, key, *args, delimiter=".", default="key", **kwargs):
             try:
                 d = self.data[func.__name__]
@@ -52,7 +49,8 @@ class Style:
         return self.typography("fontface")
 
     def font(self, key):
-        return (self.fontface(), self.fonttag(key)[1])
+        size, weight = self.fonttag(key)[::-1]
+        return (self.fontface(), size, "" if weight == "Regular" else weight.lower())
 
 
 class BaseSetting:
@@ -63,9 +61,9 @@ class BaseSetting:
                 self[k] = settings[k]
 
     def __call__(self, key=None, value=None):
-        if key:
+        if key is not None:
             k = str(key)
-            if value:
+            if value is not None:
                 self[k] = value
             return self[k]
         else:
@@ -99,7 +97,7 @@ class Configure(BaseSetting):
 
 
 class Map(BaseSetting):
-    def __call__(self, key=None, value=None, fixed=None, flex=None):
+    def __call__(self, key=None, value=None, fixed=None, flex=None, add=False):
         v = value
         if fixed or flex:
             if flex:
@@ -116,7 +114,10 @@ class Map(BaseSetting):
                 ]
             else:
                 states = [tuple(sorted(fixed) + [v])]
-            v = states
+            if add:
+                v = super().__call__(key) + states
+            else:
+                v = states
         return super().__call__(key, v)
 
 class WidgetSetting:
@@ -141,7 +142,7 @@ class WidgetSetting:
         self.map(key, value, **kw)
 
 class Settings:
-    def __init__(self, settings):
+    def __init__(self, settings=None, **kw):
         self.widgets = {}
         if settings:
             for w in settings:
@@ -158,7 +159,7 @@ class Settings:
         return key in self.widgets
 
     def __getitem__(self, key):
-        return self.widgets[str(key)]()
+        return self.widgets[str(key)]
 
     def __len__(self):
         return len(self.widgets)
@@ -176,3 +177,7 @@ class Settings:
         self.new(key)
         for k in kw:
             self.widgets[key].set_map(k, kw[k])
+
+    def map_value(self, key, prop, value, **kw):
+        self.new(key)
+        self.widgets[key].set_map(prop, value, **kw)
