@@ -5,7 +5,6 @@ from tkinter import filedialog
 
 
 from music_production_project_manager.folder_handler import FileList
-from .style import Mineral
 from .style import core
 from .style import components
 from .default_style import DefaultSetting
@@ -20,6 +19,8 @@ class FolderBrowser:
         # super().__init__(master, *args, **kwargs)
         self._FileList = FileList()
         self.master = master
+        master.title("Music Production Project Manager")
+
         self.frame = ttk.Frame(self.master)
         self.frame.pack(expand=True, fill="both")
         self.path = tk.StringVar()
@@ -27,11 +28,12 @@ class FolderBrowser:
         self.noBackup = tk.BooleanVar()
         self.skipMonoize = tk.BooleanVar()
         self.skipRemove = tk.BooleanVar()
+
         self.current_stage = tk.IntVar()
-        master.title("Music Production Project Manager")
+        self.analyzed = tk.BooleanVar()
         self.setup_style(self.master)
 
-        top = ttk.Frame(self.frame)
+        top = ttk.Frame(self.frame, style="outline.TFrame")
         self.setup_header(top)
         self.setup_folder_selection(top)
         self.setup_input(top)
@@ -40,14 +42,14 @@ class FolderBrowser:
         self.fr_input.pack(anchor="n", expand=False, fill="x", padx=16)
         top.pack(anchor="n", fill="x", ipady=8)
 
-        mid = ttk.Frame(self.frame)
+        mid = ttk.Frame(self.frame, style="outline.TFrame")
         self.display_file_list(mid)
-        self.fr_file_list.pack(anchor="n", expand=True, fill="both", pady=16, padx=16)
+        self.fr_file_list.pack(anchor="n", expand=True, fill="both", padx=16)
         mid.pack(anchor="n", expand=True, fill="both")
 
-        bottom = ttk.Frame(self.frame)
+        bottom = ttk.Frame(self.frame, style="outline.TFrame")
         self.display_actions(bottom)
-        self.fr_actions.pack(side="bottom", expand=False, fill="x", padx=16)
+        self.fr_actions.pack(side="bottom", expand=False, fill="x", pady=[0, 16], padx=16)
         bottom.pack(anchor="n", fill="x")
 
         self.stage()
@@ -55,35 +57,29 @@ class FolderBrowser:
 
     def setup_style(self, master):
         s = ttk.Style()
-        mineral = Mineral()
-        s.theme_create("Mineral", settings=DefaultSetting()())
+        s.theme_create("Mineral", parent="clam", settings=DefaultSetting()())
         s.theme_use("Mineral")
-        # print(s.layout("TButton"))
-        # print(s.element_options("TButton.focus"))
-        # print(s.element_options("TButton.padding"))
-        # print(s.lookup("TButton.border", "background"))
-        # print(s.lookup("TButton.focus", "focuscolor"))
 
     def stage(self, value=None):
         if value is not None:
             self.current_stage.set(value)
         stage = self.current_stage.get()
         if stage == 0:
-            self.bt_browse.state(["!disabled"])
-            self.bt_analyze.state(["disabled"])
-            self.bt_proceed.state(["disabled"])
+            self.bt_browse.state(["!disabled", "focus"])
+            self.bt_analyze.state(["disabled", "!focus"])
+            self.bt_proceed.state(["disabled", "!focus"])
         elif stage == 1:
-            self.bt_browse.state(["readonly"])
-            self.bt_analyze.state(["!disabled"])
-            self.bt_proceed.state(["disabled"])
+            self.bt_browse.state(["!disabled", "!focus"])
+            self.bt_analyze.state(["!disabled", "focus"])
+            self.bt_proceed.state(["disabled", "!focus"])
         elif stage == 2:
-            self.bt_browse.state(["readonly"])
-            self.bt_analyze.state(["readonly"])
-            self.bt_proceed.state(["!disabled"])
+            self.bt_browse.state(["!disabled", "!focus"])
+            self.bt_analyze.state(["readonly", "!focus"])
+            self.bt_proceed.state(["!disabled", "focus"])
         elif stage == -1:
-            self.bt_browse.state(["disabled"])
-            self.bt_analyze.state(["disabled"])
-            self.bt_proceed.state(["disabled"])
+            self.bt_browse.state(["disabled", "!focus"])
+            self.bt_analyze.state(["disabled", "!focus"])
+            self.bt_proceed.state(["disabled", "!focus"])
 
     def setup_header(self, master):
         frame = ttk.Frame(master)
@@ -94,8 +90,9 @@ class FolderBrowser:
     def setup_folder_selection(self, master):
         frame = ttk.Frame(master)
         address_label = ttk.Label(frame, text="Select Folder:", style="Panel.TLabel")
-        address_label.pack(side="left", anchor="n")
-        self.address = ttk.Entry(frame)
+        address_label.pack(side="left")
+        addressCmd = (master.register(self.address_validation), "%P")
+        self.address = ttk.Entry(frame, validate="key", validatecommand=addressCmd)
         self.address.pack(side="left", expand=True, fill="x", padx=8)
         self.bt_browse = ttk.Button(frame, text="Browse", command=self.browse_command)
         self.bt_browse.pack(side="left", expand=False)
@@ -104,19 +101,36 @@ class FolderBrowser:
 
     def browse_command(self):
         path = tk.filedialog.askdirectory(initialdir=self.path.get())
-        if path:
+        if path and os.path.exists(path):
             self.path.set(path)
             self.address.delete(0, tk.END)
             self.address.insert(0, path)
             self.stage(1)
+
+    def address_validation(self, path):
+        if path == self.path.get():
+            if self.analyzed.get():
+                self.stage(2)
+            else:
+                self.stage(1)
+            return True
+        else:
+            if os.path.exists(path):
+                self.path.set(path)
+                self.stage(1)
+            else:
+                self.stage(0)
+            return True
 
     def setup_input(self, master):
         frame = ttk.Frame(master)
         top = ttk.Frame(frame)
         bottom = ttk.Frame(frame)
 
+        lb_threshold = ttk.Label(None, text="Null threshold", padding=[8, 0, 8, 0])
         threshold = ttk.LabelFrame(
             top,
+            labelwidget=lb_threshold,
             text="Null threshold",
             labelanchor="n",
             borderwidth=1,
@@ -132,13 +146,10 @@ class FolderBrowser:
         self.bt_analyze = ttk.Button(
             bottom, text="Analyze", command=self.analyze_command
         )
-        # print(analyze.widgetName)
-        # print(analyze.state(["readonly"]))
-        # print(analyze.state())
+
         self.bt_analyze.pack(side="left", expand=True, fill="x")
         threshold.pack(side="left", expand=True, fill="x")
         top.pack(expand=True, fill="x")
-        # ttk.Label(frame, text="").pack(side="top")
         bottom.pack(expand=True, fill="x", pady=8)
 
         self.fr_input = frame
@@ -151,7 +162,8 @@ class FolderBrowser:
             return v
 
         if not os.path.exists(self.path.get()):
-            return self.stage(0)
+            self.stage(0)
+            return
 
         self.stage(-1)
         options = {"threshold": self.threshold.get()}
@@ -173,7 +185,7 @@ class FolderBrowser:
                     select(file.action),
                 ],
             )
-
+        self.analyzed.set(True)
         self.stage(2)
 
     def display_file_list(self, master):
@@ -189,19 +201,19 @@ class FolderBrowser:
         tree.heading("#0", text="Filename")
         tree.column("#0", width=256, stretch=True)
         tree.heading("#1", text="Channels")
-        tree.column("#1", width=96, stretch=False)
+        tree.column("#1", width=96, stretch=False, anchor="n")
         tree.heading("Empty", text="Empty")
-        tree.column("Empty", width=x_width, stretch=False)
+        tree.column("Empty", width=x_width, stretch=False, anchor="n")
         tree.heading("Mono", text="Mono")
-        tree.column("Mono", width=x_width, stretch=False)
+        tree.column("Mono", width=x_width, stretch=False, anchor="n")
         tree.heading("Fake", text="Fake")
-        tree.column("Fake", width=x_width, stretch=False)
+        tree.column("Fake", width=x_width, stretch=False, anchor="n")
         tree.heading("Stereo", text="Stereo")
-        tree.column("Stereo", width=x_width, stretch=False)
+        tree.column("Stereo", width=x_width, stretch=False, anchor="n")
         tree.heading("Multi", text="Multi")
-        tree.column("Multi", width=x_width, stretch=False)
+        tree.column("Multi", width=x_width, stretch=False, anchor="n")
         tree.heading("Action", text="Action")
-        tree.column("Action", width=128, stretch=False)
+        tree.column("Action", width=128, stretch=False, anchor="n")
 
         tree.pack(side="left", expand=True, fill="both")
         scroll.pack(side="right", fill="y")
@@ -210,30 +222,10 @@ class FolderBrowser:
         self.fr_file_list = frame
 
     def display_actions(self, master):
-        def proceed_command():
-            options = {
-                "noBackup": self.noBackup.get(),
-                "skipMonoize": self.skipMonoize.get(),
-                "skipRemove": self.skipRemove.get(),
-            }
-            self._FileList.update_options(options)
-            self._FileList.proceed()
-            self.stage(0)
-
-        def backup_command():
-            # self.noBackup.set(False)
-            print(self.noBackup.get())
-
-        def skipMonoize_command(v):
-            self.skipMonoize = v
-
-        def skipRemove_command(v):
-            self.skipRemove = v
-
         frame = ttk.Frame(master)
         top = ttk.Frame(frame)
         bottom = ttk.Frame(frame)
-        self.bt_proceed = ttk.Button(bottom, text="Proceed", command=proceed_command)
+        self.bt_proceed = ttk.Button(bottom, text="Proceed", command=self.proceed_command)
         self.bt_proceed.pack(expand=True, fill="both")
         backup = ttk.Checkbutton(
             top,
@@ -241,29 +233,32 @@ class FolderBrowser:
             variable=self.noBackup,
             onvalue=False,
             offvalue=True,
-            command=backup_command,
         )
         skipMonoize_button = ttk.Checkbutton(
-            top,
-            text="Skip Monoize",
-            variable=self.skipMonoize,
-            command=lambda: skipMonoize_command(self.skipMonoize.get()),
+            top, text="Skip Monoize", variable=self.skipMonoize,
         )
         skipRemove_button = ttk.Checkbutton(
-            top,
-            text="Skip Monoize",
-            variable=self.skipRemove,
-            command=lambda: skipRemove_command(self.skipRemove.get()),
+            top, text="Skip Monoize", variable=self.skipRemove,
         )
         address = ttk.Entry(top, width=16)
         address.insert(0, self._FileList.options["backup"]["folder"])
 
-        backup.pack(side="left", expand=False, fill="both")
-        address.pack(side="left", expand=True, fill="x")
-        skipMonoize_button.pack(side="left", expand=False, fill="both")
-        skipRemove_button.pack(side="left", expand=False, fill="both")
+        backup.pack(side="left")
+        address.pack(side="left", expand=True, fill="x", padx=8)
+        skipMonoize_button.pack(side="left")
+        skipRemove_button.pack(side="left")
 
-        top.pack(expand=False, fill="x")
-        bottom.pack(expand=True, fill="both", pady=16)
+        top.pack(expand=False, fill="x", pady=16)
+        bottom.pack(expand=True, fill="both")
 
         self.fr_actions = frame
+
+    def proceed_command(self):
+        options = {
+            "noBackup": self.noBackup.get(),
+            "skipMonoize": self.skipMonoize.get(),
+            "skipRemove": self.skipRemove.get(),
+        }
+        self._FileList.update_options(options)
+        self._FileList.proceed()
+        self.stage(0)
