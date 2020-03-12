@@ -49,7 +49,8 @@ class Style:
         return self.typography("fontface")
 
     def font(self, key):
-        return (self.fontface(), self.fonttag(key)[1])
+        size, weight = self.fonttag(key)[::-1]
+        return (self.fontface(), size, "" if weight == "Regular" else weight.lower())
 
 
 class BaseSetting:

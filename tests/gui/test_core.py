@@ -52,7 +52,7 @@ class TypographySample:
 
     def setup_tag(self):
         tags = ("h1", "h2", "h3", "h4", "h5", "h6", "p", "li", "ul", "ol")
-        return {x: [f"style_{x}", f"size_{x}"] for x in tags}
+        return {x: [f"weight_{x}", f"size_{x}"] for x in tags}
 
     def asdict(self):
         typo = {"tag": self.tag, "fontface": self.fontface}
@@ -102,11 +102,11 @@ class TestStyle:
 
     @pytest.mark.parametrize("key", ["h4", "h5", "ul"])
     def test_typography_fonttag(self, typography, key):
-        assert typography.fonttag(key) == [f"style_{key}", f"size_{key}"]
+        assert typography.fonttag(key) == [f"weight_{key}", f"size_{key}"]
 
     @pytest.mark.parametrize("key", ["h2", "h3", "li"])
     def test_typography_font(self, typography, key):
-        assert typography.font(key) == (typography.fontface(), f"size_{key}")
+        assert typography.font(key) == ("fontface", f"size_{key}", f"weight_{key}")
 
     def test_typography_fontface(self, typography):
         assert typography.fontface() == "fontface"
