@@ -29,19 +29,19 @@ def tmp_file(request, tmp_path):
 class AudioInfo(object):
     def __init__(self, shape):
         self.shape = shape
-        self.filename = get_audio_path(shape)
-        self.src = AudioFile(self.filename)
+        self.filepath = get_audio_path(shape)
+        self.src = AudioFile(self.filepath)
+        self.channels = 1 if "-m" in shape else 2
         self.isCorrelated = False if ("+" in shape or "100" in shape) else True
         self.isEmpty = shape[0] == "0"
-        self.isMono = False if (self.isEmpty or "+" in shape) else True
-        self.channels = 1 if "-m" in shape else 2
+        self.isMono = self.channels == 1 and not self.isEmpty
         self.validChannel = (
             0 if "0-" in shape else 3 if "+" in shape else 2 if "r" in shape else 1
         )
         self.flag = (
             0 if self.isEmpty else 1 if "-m" in shape else 2 if "-r100" in shape else 3
         )
-        self.isFakeStereo = self.isMono and self.channels == 2
+        self.isFakeStereo = not (self.isEmpty or "+" in shape) and self.channels == 2
         self.isMultichannel = shape[-1] == "n" or shape.count("+") > 1
 
     def __enter__(self):
@@ -143,10 +143,10 @@ class TestAudioFile:
         ],
         indirect=["tmp_file"],
     )
-    def test_monolize(self, tmp_file, params, result):
+    def test_monoize(self, tmp_file, params, result):
         file, testfile = tmp_file
-        with AudioFile(filename=file) as obj:
-            obj.monolize(**params)
+        with AudioFile(filepath=file) as obj:
+            obj.monoize(**params)
             assert (
                 np.all(
                     np.equal(
@@ -169,7 +169,7 @@ class TestAudioFile:
     )
     def test_remove(self, tmp_file, params, result):
         file, _ = tmp_file
-        with AudioFile(filename=file) as obj:
+        with AudioFile(filepath=file) as obj:
             obj.remove(**params)
         assert os.path.exists(file) == result
 
@@ -182,7 +182,7 @@ class TestAudioFile:
         file = tmp_file[0]
         _, filename = os.path.split(file)
         path, ext = os.path.splitext(file)
-        with AudioFile(filename=file) as obj:
+        with AudioFile(filepath=file) as obj:
             obj.split(**params)
         assert os.path.exists(file) != isSplit
         for ch in (".L", ".R"):
@@ -213,7 +213,7 @@ class TestAudioFile:
             if "chSelect" in params
             else (1 if chFlag > 3 else "L")
         )
-        with AudioFile(filename=basename + chSelect + ext) as obj:
+        with AudioFile(filepath=basename + chSelect + ext) as obj:
             obj.join(**params)
         assert os.path.exists(file) == result
         assert os.path.exists(basename + chSelect + ext) != result
