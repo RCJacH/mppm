@@ -195,10 +195,7 @@ class AudioFile:
         if not isCorrelated and "0" not in bin(flag)[2:]:
             return flag  # True Multichannel
         if isCorrelated:
-            try:
-                return sample.index(max(sample, key=abs)) + 1
-            except IndexError:
-                raise Exception("Sample argument must have at least length of 1.")
+            return sample.index(max(sample, key=abs)) + 1
         else:
             return flag
 
