@@ -12,9 +12,9 @@ from music_production_project_manager.analyze import SampleblockChannelInfo
 import logging
 
 # logging.basicConfig(
-    # handlers=[logging.FileHandler('build_json_list.log', 'w', 'utf-8')],
-    # level=logging.INFO,
-    # format="%(levelname)s:%(asctime)s:%(message)s"
+# handlers=[logging.FileHandler('build_json_list.log', 'w', 'utf-8')],
+# level=logging.INFO,
+# format="%(levelname)s:%(asctime)s:%(message)s"
 # )
 LOGGER = logging.getLogger(__name__)
 
@@ -26,9 +26,12 @@ class AudioFile:
         blocksize=None,
         debug=False,
         null_threshold=-100,
+        empty_threshold=-100,
         analyze=True,
     ):
-        LOGGER.debug(f"Initiating file: {self.__class__.__name__}, with filepath: {filepath}")
+        LOGGER.debug(
+            f"Initiating file: {self.__class__.__name__}, with filepath: {filepath}"
+        )
         self._filepath = filepath
         self._file = None
         self.blocksize = blocksize
@@ -41,6 +44,7 @@ class AudioFile:
         self._samplerate = None
         self._action = "D"
         self.null_threshold = 10 ** (null_threshold / 20)
+        self.empty_threshold = 10 ** (empty_threshold / 20)
         if filepath is not None:
             try:
                 self._path, self._filename = os.path.split(filepath)
@@ -200,7 +204,11 @@ class AudioFile:
 
     def _analyze_blocks(self):
         info = SampleblockChannelInfo(
-            flag=None, isCorrelated=None, sample=None, null_threshold=self.null_threshold
+            flag=None,
+            isCorrelated=None,
+            sample=None,
+            null_threshold=self.null_threshold,
+            empty_threshold=self.empty_threshold,
         )
         for sampleblock in self.file.blocks(blocksize=self.blocksize, always_2d=True):
             info.set_info(sampleblock)
@@ -277,7 +285,8 @@ class AudioFile:
 
     def join(self, other=None, remove=True):
         path, ext = os.path.splitext(self._filepath)
-        if s := re.match(r"(.+)([^\a])([lL]|[rR])$", path):
+        s = re.match(r"(.+)([^\a])([lL]|[rR])$", path)
+        if s:
             base, delimiter, ch = s.groups()
             chs = ["L", "R"]
             chnum = chs.index(ch)
