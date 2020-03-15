@@ -1,13 +1,16 @@
 """
 Tests for 'analyze' module
 """
-import pytest
 import os
 import shutil
+
 import numpy as np
-from music_production_project_manager.audio_file_handler import AudioFile
+import pytest
+
 from soundfile import SoundFile as sf
 from soundfile import read
+
+from music_production_project_manager.audio_file_handler import AudioFile
 
 
 def get_audio_path(name, ext=".wav"):
@@ -92,6 +95,18 @@ class TestAudioFile:
             assert obj.channels == 1
         assert obj.file is None
         assert obj.channels == 1
+        with AudioFile() as obj:
+            assert obj.file == None
+        obj = AudioFile(get_audio_path("empty"), analyze=False)
+        assert obj.file == None
+        with AudioFile(get_audio_path("empty"), analyze=False) as obj:
+            assert obj.file
+
+    def test_file_setter_error(self, mocker):
+        obj = AudioFile("error")
+        assert not os.path.exists("error")
+        assert obj.filepath == "error"
+        assert obj.file == None
 
     @pytest.mark.parametrize(
         "params, result",
@@ -193,7 +208,7 @@ class TestAudioFile:
         [
             ({"delimiter": ".", "chFlag": 3}, True),
             ({"delimiter": ".", "chFlag": 3, "chSelect": "R"}, True),
-            ({"delimiter": ".", "chFlag": 2, "chSelect": 'R'}, False),
+            ({"delimiter": ".", "chFlag": 2, "chSelect": "R"}, False),
             ({"delimiter": "_", "chFlag": 3,}, True),
             ({"delimiter": ".", "chFlag": 1}, False),
         ],

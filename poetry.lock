@@ -213,6 +213,14 @@ version = "1.8.1"
 
 [[package]]
 category = "dev"
+description = "Get CPU info with pure Python 2 & 3"
+name = "py-cpuinfo"
+optional = false
+python-versions = "*"
+version = "5.0.0"
+
+[[package]]
+category = "dev"
 description = "Python style guide checker"
 name = "pycodestyle"
 optional = false
@@ -267,6 +275,23 @@ testing = ["argcomplete", "hypothesis (>=3.56)", "mock", "nose", "requests", "xm
 
 [[package]]
 category = "dev"
+description = "A ``pytest`` fixture for benchmarking code. It will group the tests into rounds that are calibrated to the chosen timer. See calibration_ and FAQ_."
+name = "pytest-benchmark"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+version = "3.2.3"
+
+[package.dependencies]
+py-cpuinfo = "*"
+pytest = ">=3.8"
+
+[package.extras]
+aspect = ["aspectlib"]
+elasticsearch = ["elasticsearch"]
+histogram = ["pygal", "pygaljs"]
+
+[[package]]
+category = "dev"
 description = "Pytest plugin for measuring coverage."
 name = "pytest-cov"
 optional = false
@@ -279,6 +304,20 @@ pytest = ">=3.6"
 
 [package.extras]
 testing = ["fields", "hunter", "process-tests (2.0.2)", "six", "virtualenv"]
+
+[[package]]
+category = "dev"
+description = "Thin-wrapper around the mock package for easier use with py.test"
+name = "pytest-mock"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+version = "2.0.0"
+
+[package.dependencies]
+pytest = ">=2.7"
+
+[package.extras]
+dev = ["pre-commit", "tox"]
 
 [[package]]
 category = "dev"
@@ -343,7 +382,7 @@ python-versions = "*"
 version = "0.1.8"
 
 [metadata]
-content-hash = "28cb760f6915db2530ce00184b4b7b04a8c52443b43fdebe291529be8373f8f5"
+content-hash = "44b9d2f1956fe99302ed3d654ea8619b233676ef3a341eb2953b1879b7cbbf5b"
 python-versions = "^3.8"
 
 [metadata.files]
@@ -513,6 +552,9 @@ py = [
     {file = "py-1.8.1-py2.py3-none-any.whl", hash = "sha256:c20fdd83a5dbc0af9efd622bee9a5564e278f6380fffcacc43ba6f43db2813b0"},
     {file = "py-1.8.1.tar.gz", hash = "sha256:5e27081401262157467ad6e7f851b7aa402c5852dbcb3dae06768434de5752aa"},
 ]
+py-cpuinfo = [
+    {file = "py-cpuinfo-5.0.0.tar.gz", hash = "sha256:2cf6426f776625b21d1db8397d3297ef7acfa59018f02a8779123f3190f18500"},
+]
 pycodestyle = [
     {file = "pycodestyle-2.5.0-py2.py3-none-any.whl", hash = "sha256:95a2219d12372f05704562a14ec30bc76b05a5b297b21a5dfe3f6fac3491ae56"},
     {file = "pycodestyle-2.5.0.tar.gz", hash = "sha256:e40a936c9a450ad81df37f549d676d127b1b66000a6c500caa2b085bc0ca976c"},
@@ -533,9 +575,17 @@ pytest = [
     {file = "pytest-5.3.5-py3-none-any.whl", hash = "sha256:ff615c761e25eb25df19edddc0b970302d2a9091fbce0e7213298d85fb61fef6"},
     {file = "pytest-5.3.5.tar.gz", hash = "sha256:0d5fe9189a148acc3c3eb2ac8e1ac0742cb7618c084f3d228baaec0c254b318d"},
 ]
+pytest-benchmark = [
+    {file = "pytest-benchmark-3.2.3.tar.gz", hash = "sha256:ad4314d093a3089701b24c80a05121994c7765ce373478c8f4ba8d23c9ba9528"},
+    {file = "pytest_benchmark-3.2.3-py2.py3-none-any.whl", hash = "sha256:01f79d38d506f5a3a0a9ada22ded714537bbdfc8147a881a35c1655db07289d9"},
+]
 pytest-cov = [
     {file = "pytest-cov-2.8.1.tar.gz", hash = "sha256:cc6742d8bac45070217169f5f72ceee1e0e55b0221f54bcf24845972d3a47f2b"},
     {file = "pytest_cov-2.8.1-py2.py3-none-any.whl", hash = "sha256:cdbdef4f870408ebdbfeb44e63e07eb18bb4619fae852f6e760645fa36172626"},
+]
+pytest-mock = [
+    {file = "pytest-mock-2.0.0.tar.gz", hash = "sha256:b35eb281e93aafed138db25c8772b95d3756108b601947f89af503f8c629413f"},
+    {file = "pytest_mock-2.0.0-py2.py3-none-any.whl", hash = "sha256:cb67402d87d5f53c579263d37971a164743dc33c159dfb4fb4a86f37c5552307"},
 ]
 regex = [
     {file = "regex-2020.2.20-cp27-cp27m-win32.whl", hash = "sha256:99272d6b6a68c7ae4391908fc15f6b8c9a6c345a46b632d7fdb7ef6c883a2bbb"},
