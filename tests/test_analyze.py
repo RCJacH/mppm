@@ -21,16 +21,24 @@ class Test_SampleblockChannelInfo(object):
         obj.channelblock = [[0.6721, 0.0391, -0.518], [-0.6968, -0.644, 0.0526]]
         assert obj.set_channels() == 2
 
-    def test_flag_on_from_sample(self, obj):
-        obj.flag = 0
-        obj.set_channelblock([[0, 0.5]])
-        assert obj.set_flag() == 2
-        obj.flag = 0
-        obj.set_channelblock([[-0.25, 0]])
-        assert obj.set_flag() == 1
-        obj.flag = 0
-        obj.set_channelblock([[0.0, 0.0]])
-        assert obj.set_flag() == 0
+    @pytest.mark.parametrize(
+        "sampleblock, result",
+        [
+            pytest.param([[0, 0.5], [0, 0.2]], 2, id="R"),
+            pytest.param([[-0.25, 0], [0.5, 0]], 1, id="L"),
+            pytest.param([[-0.25, 0.5]] * 2, 3, id="LR"),
+            pytest.param([[0.0, 0.0]] * 2, 0, id="Empty0"),
+            pytest.param([[0.00001, 0.00001]] * 2, 3, id="AboveThreshold"),
+            pytest.param([[0.000009, 0.000009]] * 2, 0, id="BelowThreshold"),
+            pytest.param(
+                [[0, 1, 2], [0, 1, 2], [0, -1, -1.5]], 6, id="MultiWithOneEmpty"
+            ),
+            pytest.param([[0.5, 1, 2]] * 3, 7, id="MultiChannel"),
+        ],
+    )
+    def test_set_flag(self, obj, sampleblock, result):
+        assert obj.flag == 0
+        assert obj.set_flag(sampleblock) == result
 
     def test_flag_on(self, obj):
         obj.flag = 0
@@ -135,8 +143,7 @@ class Test_SampleblockChannelInfo(object):
         [
             pytest.param(
                 None,
-                [[0.00308228] * 2,
-                [0.00613403] * 2],
+                [[0.00308228] * 2, [0.00613403] * 2],
                 [0.00613403] * 2,
                 id="FloatIdentical",
             ),
@@ -150,7 +157,12 @@ class Test_SampleblockChannelInfo(object):
             pytest.param([0.8] * 2, [[0.2, 0.5]], [0.8] * 2, id="KeepOld"),
             pytest.param([-0.8, 0.2], [[-0.3, 0.8]], [-0.8, 0.2], id="Negative"),
             pytest.param([], [[0, 0]], [], id="Empty"),
-            pytest.param([-0.8, 0.5, 0.3], [[0.2, -0.6, 0.1]], [-0.8, 0.5, 0.3], id="MultichannelNegative"),
+            pytest.param(
+                [-0.8, 0.5, 0.3],
+                [[0.2, -0.6, 0.1]],
+                [-0.8, 0.5, 0.3],
+                id="MultichannelNegative",
+            ),
         ],
     )
     def test_get_sample_from_sampleblock(self, obj, sample, block, result):
@@ -207,9 +219,7 @@ class Test_SampleblockChannelInfo(object):
                 id="MonoWithSettings",
             ),
             pytest.param(
-                {
-                    "sampleblock": np.array([[1], [0.5], [0.25]]),
-                },
+                {"sampleblock": np.array([[1], [0.5], [0.25]]),},
                 [1, True, [1]],
                 id="Mono",
             ),
@@ -224,12 +234,19 @@ class Test_SampleblockChannelInfo(object):
                 id="Ch2Only",
             ),
             pytest.param(
-                {"sampleblock": np.array([[0, 0], [0, 0], [0, 0]]),},
-                [0, True, []],
-                id="Empty",
+                {"sampleblock": np.array([[0, 0]] * 3),}, [0, True, []], id="Empty",
             ),
             pytest.param(
-                {"sampleblock": np.array([[0, 0, 0], [1, 0.5, -0.2], [0.5, 0.25, 0.1]]),},
+                {"flag": None, "sampleblock": np.array([[1, -1]] * 2)},
+                [3, True, [1, -1]],
+                id="NoFlag",
+            ),
+            pytest.param(
+                {
+                    "sampleblock": np.array(
+                        [[0, 0, 0], [1, 0.5, -0.2], [0.5, 0.25, 0.1]]
+                    ),
+                },
                 [7, False, [1, 0.5, -0.2]],
                 id="MultiChannel",
             ),
