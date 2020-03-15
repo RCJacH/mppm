@@ -9,6 +9,7 @@ class SampleblockChannelInfo:
     def __init__(
         self,
         null_threshold=0.00001,  # -100dB
+        empty_threshold=0.00001,  # -100dB
         flag=0,
         isCorrelated=None,
         sample=None,
@@ -19,6 +20,7 @@ class SampleblockChannelInfo:
 
         Keyword Arguments:
             null_threshold {float} -- Ratios below this value are ignored. (default: {0.00001})
+            empty_threshold {float} -- Sample value below this value are considered silent. (default: {0.00001})
             flag {int} -- Indicate which channel has valid sounding sample. (default: {0})
             isCorrelated {[float]} -- The panning if both channels have fixed ratio. (default: {None})
             sample {list} -- A valid sample of each channel of the same position. (default: {[]})
@@ -30,6 +32,7 @@ class SampleblockChannelInfo:
         self.isCorrelated = isCorrelated
         self.sample = [] if sample is None else sample
         self.null_threshold = null_threshold
+        self.empty_threshold = empty_threshold
         self.noisefloor = noisefloor
         self.set_info(sampleblock)
 
@@ -38,7 +41,7 @@ class SampleblockChannelInfo:
         if type(sampleblock) is np.ndarray and sampleblock.size:
             self.set_channelblock(sampleblock)
             self.set_channels()
-            self.set_flag()
+            self.set_flag(sampleblock)
             self.set_correlation(self.channelblock)
             self.set_sample(sampleblock)
         # self.set_noisefloor(sampleblock)
@@ -56,15 +59,12 @@ class SampleblockChannelInfo:
         self.channels = len(self.channelblock)
         return self.channels
 
-    def set_flag(self):
-        """Flag on for each channel that contains a sounding sample."""
+    def set_flag(self, sampleblock):
+        """Flag on for each channel that contains a sample above empty threshold."""
         if self.flag is None:
             self.flag = 0
-        [
-            self.flag_on(i + 1)
-            for i, v in enumerate(self.channelblock)
-            if any(x != 0 for x in v)
-        ]
+        a = np.any(np.absolute(sampleblock) >= self.empty_threshold, axis=0).astype(int)
+        [self.flag_on(i + 1) for i, v in enumerate(a) if v]
         return self.flag
 
     def flag_on(self, n):
