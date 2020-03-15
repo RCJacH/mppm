@@ -11,7 +11,7 @@ class SampleblockChannelInfo:
         threshold=0.00001,  # -100dB
         flag=0,
         isCorrelated=None,
-        sample=[],
+        sample=None,
         sampleblock=None,
         noisefloor=0,
     ):
@@ -28,7 +28,7 @@ class SampleblockChannelInfo:
 
         self.flag = flag
         self.isCorrelated = isCorrelated
-        self.sample = sample
+        self.sample = [] if sample is None else sample
         self.NULL_THRESHOLD = threshold
         self.noisefloor = noisefloor
         self.set_info(sampleblock)
@@ -44,11 +44,11 @@ class SampleblockChannelInfo:
         # self.set_noisefloor(sampleblock)
 
     def set_channelblock(self, sampleblock):
-        """Channelblock is a transposed sampleblock"""
+        """Channelblock is a transposed sampleblock."""
         self.channelblock = self._transpose(sampleblock)
 
     def _transpose(self, sampleblock):
-        """Exchange the x and y dimensions of sampleblock"""
+        """Exchange the x and y dimensions of sampleblock."""
         return np.array(sampleblock).transpose(1, 0)
 
     def set_channels(self):
@@ -57,7 +57,7 @@ class SampleblockChannelInfo:
         return self.channels
 
     def set_flag(self):
-        """Flag on for each channel that contains a sounding sample"""
+        """Flag on for each channel that contains a sounding sample."""
         if self.flag is None:
             self.flag = 0
         [
@@ -76,7 +76,7 @@ class SampleblockChannelInfo:
         return self.flag
 
     def set_correlation(self, channelblock):
-        """Check whether audio is panned mono"""
+        """Check whether audio is panned mono."""
         if self.isCorrelated is not False:
             self.isCorrelated = self.channels < 2 or self._is_channelblock_correlated(
                 channelblock
@@ -100,7 +100,7 @@ class SampleblockChannelInfo:
         ).all()
 
     def set_sample(self, sampleblock):
-        """A valid sample of all channels with the same position"""
+        """A valid sample of all channels with the same position."""
         self.sample = self._get_sample_from_sampleblock(sampleblock)
 
     def reset_sample(self):
