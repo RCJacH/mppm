@@ -45,12 +45,9 @@ class AudioFile:
         self._action = "D"
         self.null_threshold = 10 ** (null_threshold / 20)
         self.empty_threshold = 10 ** (empty_threshold / 20)
-        if filepath is not None:
-            try:
-                self._path, self._filename = os.path.split(filepath)
-                self.file = filepath
-            except RuntimeError:
-                self.close()
+        if filepath is not None and analyze:
+            self._path, self._filename = os.path.split(filepath)
+            self.file = filepath
 
     def __del__(self):
         self.close()
@@ -85,13 +82,16 @@ class AudioFile:
 
     @file.setter
     def file(self, file):
-        self._file = sf(file)
-        self._channels = self._file.channels
-        self._samplerate = self._file.samplerate
-        if not self.blocksize:
-            self.blocksize = self._samplerate
-        self.analyze()
-        self._file.seek(0)
+        try:
+            self._file = sf(file)
+            self._channels = self._file.channels
+            self._samplerate = self._file.samplerate
+            if not self.blocksize:
+                self.blocksize = self._samplerate
+            self.analyze()
+            self._file.seek(0)
+        except RuntimeError:
+            self.close()
 
     @property
     def action(self):

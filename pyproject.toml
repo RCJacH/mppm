@@ -16,6 +16,8 @@ mypy = "^0.761"
 black = "^19.10b0"
 isort = "^4.3.21"
 flake8 = "^3.7.9"
+pytest-mock = "^2.0.0"
+pytest-benchmark = "^3.2.3"
 
 [build-system]
 requires = ["poetry>=0.12"]
