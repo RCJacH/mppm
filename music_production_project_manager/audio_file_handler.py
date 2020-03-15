@@ -25,7 +25,7 @@ class AudioFile:
         filepath=None,
         blocksize=None,
         debug=False,
-        threshold=-100,
+        null_threshold=-100,
         analyze=True,
     ):
         LOGGER.debug(f"Initiating file: {self.__class__.__name__}, with filepath: {filepath}")
@@ -40,7 +40,7 @@ class AudioFile:
         self._sample = None
         self._samplerate = None
         self._action = "D"
-        self.NULL_THRESHOLD = 10 ** (threshold / 20)
+        self.null_threshold = 10 ** (null_threshold / 20)
         if filepath is not None:
             try:
                 self._path, self._filename = os.path.split(filepath)
@@ -200,7 +200,7 @@ class AudioFile:
 
     def _analyze_blocks(self):
         info = SampleblockChannelInfo(
-            flag=None, isCorrelated=None, sample=None, threshold=self.NULL_THRESHOLD
+            flag=None, isCorrelated=None, sample=None, null_threshold=self.null_threshold
         )
         for sampleblock in self.file.blocks(blocksize=self.blocksize, always_2d=True):
             info.set_info(sampleblock)

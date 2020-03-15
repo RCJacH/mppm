@@ -8,7 +8,7 @@ from soundfile import SEEK_END
 class SampleblockChannelInfo:
     def __init__(
         self,
-        threshold=0.00001,  # -100dB
+        null_threshold=0.00001,  # -100dB
         flag=0,
         isCorrelated=None,
         sample=None,
@@ -18,7 +18,7 @@ class SampleblockChannelInfo:
         """Analyze audio information in a single sampleblock
 
         Keyword Arguments:
-            threshold {float} -- Ratios below this value are ignored. (default: {0.00001})
+            null_threshold {float} -- Ratios below this value are ignored. (default: {0.00001})
             flag {int} -- Indicate which channel has valid sounding sample. (default: {0})
             isCorrelated {[float]} -- The panning if both channels have fixed ratio. (default: {None})
             sample {list} -- A valid sample of each channel of the same position. (default: {[]})
@@ -29,7 +29,7 @@ class SampleblockChannelInfo:
         self.flag = flag
         self.isCorrelated = isCorrelated
         self.sample = [] if sample is None else sample
-        self.NULL_THRESHOLD = threshold
+        self.null_threshold = null_threshold
         self.noisefloor = noisefloor
         self.set_info(sampleblock)
 
@@ -96,7 +96,7 @@ class SampleblockChannelInfo:
     def _is_ratio_correlated(self, ratios):
         """Check if the difference of ratios of all channels are below null threshold."""
         return (
-            np.absolute(np.diff(np.array(ratios), axis=0)).flat < self.NULL_THRESHOLD
+            np.absolute(np.diff(np.array(ratios), axis=0)).flat < self.null_threshold
         ).all()
 
     def set_sample(self, sampleblock):
