@@ -25,6 +25,7 @@ class FolderBrowser:
         self.frame.pack(expand=True, fill="both")
         self.path = tk.StringVar()
         self.null_threshold = tk.DoubleVar()
+        self.empty_threshold = tk.DoubleVar()
         self.noBackup = tk.BooleanVar()
         self.skipMonoize = tk.BooleanVar()
         self.skipRemove = tk.BooleanVar()
@@ -49,7 +50,9 @@ class FolderBrowser:
 
         bottom = ttk.Frame(self.frame, style="outline.TFrame")
         self.display_actions(bottom)
-        self.fr_actions.pack(side="bottom", expand=False, fill="x", pady=[0, 16], padx=16)
+        self.fr_actions.pack(
+            side="bottom", expand=False, fill="x", pady=[0, 16], padx=16
+        )
         bottom.pack(anchor="n", fill="x")
 
         self.stage()
@@ -127,11 +130,11 @@ class FolderBrowser:
         top = ttk.Frame(frame)
         bottom = ttk.Frame(frame)
 
-        lb_null_threshold = ttk.Label(None, text="Null null_threshold", padding=[8, 0, 8, 0])
+        lb_null_threshold = ttk.Label(None, text="Null threshold", padding=[8, 0, 8, 0])
         null_threshold = ttk.LabelFrame(
             top,
             labelwidget=lb_null_threshold,
-            text="Null null_threshold",
+            text="Null threshold",
             labelanchor="n",
             borderwidth=1,
             padding=[8, 8, 8, 16],
@@ -143,12 +146,31 @@ class FolderBrowser:
         )
         en_null_threshold.pack(side="bottom")
 
+        lb_empty_threshold = ttk.Label(
+            None, text="Empty threshold", padding=[8, 0, 8, 0]
+        )
+        empty_threshold = ttk.LabelFrame(
+            top,
+            labelwidget=lb_empty_threshold,
+            text="Empty threshold",
+            labelanchor="n",
+            borderwidth=1,
+            padding=[8, 8, 8, 16],
+            relief="sunken",
+        )
+        en_empty_threshold = ttk.Entry(empty_threshold, justify="center")
+        en_empty_threshold.insert(
+            0, "{:.20f}".format(self._FileList.options["empty_threshold"]).rstrip("0")
+        )
+        en_empty_threshold.pack(side="bottom")
+
         self.bt_analyze = ttk.Button(
             bottom, text="Analyze", command=self.analyze_command
         )
 
         self.bt_analyze.pack(side="left", expand=True, fill="x")
-        null_threshold.pack(side="left", expand=True, fill="x")
+        null_threshold.pack(side="left", expand=True, fill="x", padx=[0, 4])
+        empty_threshold.pack(side="left", expand=True, fill="x", padx=[4, 0])
         top.pack(expand=True, fill="x")
         bottom.pack(expand=True, fill="x", pady=8)
 
@@ -225,7 +247,9 @@ class FolderBrowser:
         frame = ttk.Frame(master)
         top = ttk.Frame(frame)
         bottom = ttk.Frame(frame)
-        self.bt_proceed = ttk.Button(bottom, text="Proceed", command=self.proceed_command)
+        self.bt_proceed = ttk.Button(
+            bottom, text="Proceed", command=self.proceed_command
+        )
         self.bt_proceed.pack(expand=True, fill="both")
         backup = ttk.Checkbutton(
             top,
