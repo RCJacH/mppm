@@ -40,7 +40,7 @@ class FileList:
         self._options = options or {
             "noBackup": False,
             "backup": {"folder": "bak"},
-            "threshold": -100,
+            "null_threshold": -100,
         }
         self._files = []
         # self.filenames = []
@@ -64,7 +64,9 @@ class FileList:
 
     def populate(self, folder):
         return [
-            AudioFile(os.path.join(folder, f), threshold=self._options["threshold"],)
+            AudioFile(
+                os.path.join(folder, f), null_threshold=self._options["null_threshold"],
+            )
             for f in self._list_audio_files(folder)
         ]
 

@@ -24,7 +24,7 @@ class FolderBrowser:
         self.frame = ttk.Frame(self.master)
         self.frame.pack(expand=True, fill="both")
         self.path = tk.StringVar()
-        self.threshold = tk.DoubleVar()
+        self.null_threshold = tk.DoubleVar()
         self.noBackup = tk.BooleanVar()
         self.skipMonoize = tk.BooleanVar()
         self.skipRemove = tk.BooleanVar()
@@ -127,28 +127,28 @@ class FolderBrowser:
         top = ttk.Frame(frame)
         bottom = ttk.Frame(frame)
 
-        lb_threshold = ttk.Label(None, text="Null threshold", padding=[8, 0, 8, 0])
-        threshold = ttk.LabelFrame(
+        lb_null_threshold = ttk.Label(None, text="Null null_threshold", padding=[8, 0, 8, 0])
+        null_threshold = ttk.LabelFrame(
             top,
-            labelwidget=lb_threshold,
-            text="Null threshold",
+            labelwidget=lb_null_threshold,
+            text="Null null_threshold",
             labelanchor="n",
             borderwidth=1,
             padding=[8, 8, 8, 16],
             relief="sunken",
         )
-        en_threshold = ttk.Entry(threshold, justify="center")
-        en_threshold.insert(
-            0, "{:.20f}".format(self._FileList.options["threshold"]).rstrip("0")
+        en_null_threshold = ttk.Entry(null_threshold, justify="center")
+        en_null_threshold.insert(
+            0, "{:.20f}".format(self._FileList.options["null_threshold"]).rstrip("0")
         )
-        en_threshold.pack(side="bottom")
+        en_null_threshold.pack(side="bottom")
 
         self.bt_analyze = ttk.Button(
             bottom, text="Analyze", command=self.analyze_command
         )
 
         self.bt_analyze.pack(side="left", expand=True, fill="x")
-        threshold.pack(side="left", expand=True, fill="x")
+        null_threshold.pack(side="left", expand=True, fill="x")
         top.pack(expand=True, fill="x")
         bottom.pack(expand=True, fill="x", pady=8)
 
@@ -166,7 +166,7 @@ class FolderBrowser:
             return
 
         self.stage(-1)
-        options = {"threshold": self.threshold.get()}
+        options = {"null_threshold": self.null_threshold.get()}
         self._FileList.update_options(options)
         self._FileList.search_folder(self.path.get())
         self.file_tree.delete(*self.file_tree.get_children())
