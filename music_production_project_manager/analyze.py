@@ -18,20 +18,14 @@ class SampleblockChannelInfo:
         """Analyze audio information in a single sampleblock
 
         Keyword Arguments:
-            threshold {float} -- Ignore all samples below this value (default: {0.00001})
-            flag {int} -- Previous channel flag info (default: {0})
-            isCorrelated {[type]} -- Previous channel panning info (default: {None})
-            sample {list} -- Previous sample value (default: {[]})
-            sampleblock {[type]} -- sampleblock to analyze (default: {None})
-            noisefloor {int} -- Previous noisefloor info (default: {0})
-
-        Returns:
-        flag -- Indicate which channel has valid sounding sample
-        isCorrelated -- The panning if both channels have fixed ratio
-        sample -- A valid sample of each channel of the same position
-        noisefloor -- The lowest bit that contains information
-        channels -- number of audio channels
+            threshold {float} -- Ratios below this value are ignored. (default: {0.00001})
+            flag {int} -- Indicate which channel has valid sounding sample. (default: {0})
+            isCorrelated {[float]} -- The panning if both channels have fixed ratio. (default: {None})
+            sample {list} -- A valid sample of each channel of the same position. (default: {[]})
+            sampleblock {[float]} -- Sampleblock to analyze. (default: {None})
+            noisefloor {int} -- The lowest bit that contains information. (default: {0})
         """
+
         self.flag = flag
         self.isCorrelated = isCorrelated
         self.sample = sample
@@ -40,6 +34,7 @@ class SampleblockChannelInfo:
         self.set_info(sampleblock)
 
     def set_info(self, sampleblock):
+        """Analyze the sampleblock."""
         if type(sampleblock) is np.ndarray and sampleblock.size:
             self.set_channelblock(sampleblock)
             self.set_channels()
@@ -53,9 +48,11 @@ class SampleblockChannelInfo:
         self.channelblock = self._transpose(sampleblock)
 
     def _transpose(self, sampleblock):
+        """Exchange the x and y dimensions of sampleblock"""
         return np.array(sampleblock).transpose(1, 0)
 
     def set_channels(self):
+        """Number of channels of a sampleblock."""
         self.channels = len(self.channelblock)
         return self.channels
 
@@ -71,6 +68,7 @@ class SampleblockChannelInfo:
         return self.flag
 
     def flag_on(self, n):
+        """Turn a channel flag on, or reset all channel flags."""
         if type(n) is int:
             self.flag |= 1 << (n - 1)
         else:
@@ -80,18 +78,23 @@ class SampleblockChannelInfo:
     def set_correlation(self, channelblock):
         """Check whether audio is panned mono"""
         if self.isCorrelated is not False:
-            self.isCorrelated = self.channels < 2 or self._is_channelblock_correlated(channelblock)
+            self.isCorrelated = self.channels < 2 or self._is_channelblock_correlated(
+                channelblock
+            )
 
     def _is_channelblock_correlated(self, channelblock):
+        """Analyze whether the sample-to-sample ratios of all channels are correlated."""
         ratios = [self._get_ratio(samples) for samples in channelblock]
         return self._is_ratio_correlated(ratios)
 
     def _get_ratio(self, samples):
+        """Calculate the sample-to-sample ratio of all channels."""
         a = np.array(samples[:-1])
         b = np.array(samples[1:])
         return np.nan_to_num(np.divide(b, a, dtype="float")).tolist()
 
     def _is_ratio_correlated(self, ratios):
+        """Check if the difference of ratios of all channels are below null threshold."""
         return (
             np.absolute(np.diff(np.array(ratios), axis=0)).flat < self.NULL_THRESHOLD
         ).all()
@@ -101,18 +104,22 @@ class SampleblockChannelInfo:
         self.sample = self._get_sample_from_sampleblock(sampleblock)
 
     def reset_sample(self):
+        """Empty a sample of all channels."""
         self.sample = []
 
     def _get_sample_from_sampleblock(self, sampleblock):
+        """Take a sample of all channels with the same position."""
         if self.sample:
             sampleblock = np.append([self.sample], sampleblock, axis=0)
         sampleblock = np.array(sampleblock)
         return self._get_valid_sample(sampleblock[np.all(sampleblock, axis=1), :])
 
     def _is_sample_identical(self, sample):
+        """Check whether all channels of a sample have the same value."""
         return len(set(sample)) == 1
 
     def _get_valid_sample(self, sampleblock):
+        """Check whether the sample has the highest absolute single-sample amplitude."""
         try:
             a = sampleblock[np.all(sampleblock != 0, axis=1), :]
             maxindex = np.unravel_index(np.argmax(np.absolute(a)), a.shape)
