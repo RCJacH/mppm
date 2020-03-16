@@ -131,6 +131,35 @@ class TestAudioFile:
             assert getter(obj, "#") == a["D"]  # No assignment
 
     @pytest.mark.parametrize(
+        "options, func",
+        [
+            ({"action": "M"}, "monoize"),
+            ({"action": "R"}, "remove"),
+            ({"action": "S"}, "split"),
+            ({"action": "J"}, "join"),
+            ({"action": "S", "delimiter": "-"}, "split"),
+        ],
+    )
+    def test_proceed(self, mocker, options, func):
+        with AudioFile("empty") as obj:
+            setattr(obj, func, mocker.Mock())
+            if "action" in options:
+                obj.action = options.pop("action")
+            obj.proceed(options=options)
+            if not options:
+                getattr(obj, func).assert_called()
+            else:
+                getattr(obj, func).assert_called_with(**options)
+
+    @pytest.mark.parametrize("file, func", [("sin-s", "monoize"), ("0-s", "remove")])
+    def test_proceed_default(self, mocker, file, func):
+        with AudioFile(get_audio_path(file)) as obj:
+            setattr(obj, func, mocker.Mock())
+            print(obj._channels, obj.isCorrelated, obj.isMono, obj.isFakeStereo)
+            obj.proceed()
+            getattr(obj, func).assert_called()
+
+    @pytest.mark.parametrize(
         "params, result",
         [
             pytest.param({}, ("bak", "sin-m.wav"), id="default"),
