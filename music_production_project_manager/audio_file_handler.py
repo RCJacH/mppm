@@ -12,9 +12,9 @@ from music_production_project_manager.analyze import SampleblockChannelInfo
 import logging
 
 # logging.basicConfig(
-    # handlers=[logging.FileHandler('build_json_list.log', 'w', 'utf-8')],
-    # level=logging.INFO,
-    # format="%(levelname)s:%(asctime)s:%(message)s"
+# handlers=[logging.FileHandler('build_json_list.log', 'w', 'utf-8')],
+# level=logging.INFO,
+# format="%(levelname)s:%(asctime)s:%(message)s"
 # )
 LOGGER = logging.getLogger(__name__)
 
@@ -25,28 +25,29 @@ class AudioFile:
         filepath=None,
         blocksize=None,
         debug=False,
-        threshold=-100,
+        null_threshold=-100,
+        empty_threshold=-100,
         analyze=True,
     ):
-        LOGGER.debug(f"Initiating file: {self.__class__.__name__}, with filepath: {filepath}")
+        LOGGER.debug(
+            f"Initiating file: {self.__class__.__name__}, with filepath: {filepath}"
+        )
         self._filepath = filepath
         self._file = None
         self.blocksize = blocksize
         self._channels = None
-        self._keepChannel = 0
+        self._validChannel = 0
         self._debug = debug
         self._flag = None
         self._isCorrelated = None
         self._sample = None
         self._samplerate = None
         self._action = "D"
-        self.NULL_THRESHOLD = 10 ** (threshold / 20)
-        if filepath is not None:
-            try:
-                self._path, self._filename = os.path.split(filepath)
-                self.file = filepath
-            except RuntimeError:
-                self.close()
+        self.null_threshold = 10 ** (null_threshold / 20)
+        self.empty_threshold = 10 ** (empty_threshold / 20)
+        if filepath is not None and analyze:
+            self._path, self._filename = os.path.split(filepath)
+            self.file = filepath
 
     def __del__(self):
         self.close()
@@ -81,13 +82,16 @@ class AudioFile:
 
     @file.setter
     def file(self, file):
-        self._file = sf(file)
-        self._channels = self._file.channels
-        self._samplerate = self._file.samplerate
-        if not self.blocksize:
-            self.blocksize = self._samplerate
-        self.analyze()
-        self._file.seek(0)
+        try:
+            self._file = sf(file)
+            self._channels = self._file.channels
+            self._samplerate = self._file.samplerate
+            if not self.blocksize:
+                self.blocksize = self._samplerate
+            self.analyze()
+            self._file.seek(0)
+        except RuntimeError:
+            self.close()
 
     @property
     def action(self):
@@ -101,7 +105,7 @@ class AudioFile:
 
     @action.setter
     def action(self, v):
-        if v in ("DMRSJ"):
+        if v in "DMRSJ":
             self._action = v
 
     def proceed(self, options={}):
@@ -191,16 +195,17 @@ class AudioFile:
         if not isCorrelated and "0" not in bin(flag)[2:]:
             return flag  # True Multichannel
         if isCorrelated:
-            try:
-                return sample.index(max(sample, key=abs)) + 1
-            except IndexError:
-                raise Exception("Sample argument must have at least length of 1.")
+            return sample.index(max(sample, key=abs)) + 1
         else:
             return flag
 
     def _analyze_blocks(self):
         info = SampleblockChannelInfo(
-            flag=None, isCorrelated=None, sample=None, threshold=self.NULL_THRESHOLD
+            flag=None,
+            isCorrelated=None,
+            sample=None,
+            null_threshold=self.null_threshold,
+            empty_threshold=self.empty_threshold,
         )
         for sampleblock in self.file.blocks(blocksize=self.blocksize, always_2d=True):
             info.set_info(sampleblock)
@@ -277,7 +282,8 @@ class AudioFile:
 
     def join(self, other=None, remove=True):
         path, ext = os.path.splitext(self._filepath)
-        if s := re.match(r"(.+)([^\a])([lL]|[rR])$", path):
+        s = re.match(r"(.+)([^\a])([lL]|[rR])$", path)
+        if s:
             base, delimiter, ch = s.groups()
             chs = ["L", "R"]
             chnum = chs.index(ch)
