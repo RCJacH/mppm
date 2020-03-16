@@ -36,7 +36,7 @@ class AudioFile:
         self._file = None
         self.blocksize = blocksize
         self._channels = None
-        self._keepChannel = 0
+        self._validChannel = 0
         self._debug = debug
         self._flag = None
         self._isCorrelated = None
