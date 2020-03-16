@@ -108,6 +108,28 @@ class TestAudioFile:
         assert obj.filepath == "error"
         assert obj.file == None
 
+    def test_action(self):
+        def setter(obj, x):
+            obj.action = x
+            return obj._action
+
+        def getter(obj, x):
+            obj.action = x
+            return obj.action
+
+        with AudioFile(get_audio_path("empty")) as obj:
+            assert all(setter(obj, x) == x for x in "MRSJD")
+            assert not any(setter(obj, x) == x for x in "ABCE")
+            a = {
+                "D": "Default",
+                "M": "Monoize",
+                "R": "Remove",
+                "S": "Split",
+                "J": "Join",
+            }
+            assert all(getter(obj, x) == a[x] for x in "MRSJD")
+            assert getter(obj, "#") == a["D"]  # No assignment
+
     @pytest.mark.parametrize(
         "params, result",
         [

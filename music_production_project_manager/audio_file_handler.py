@@ -105,7 +105,7 @@ class AudioFile:
 
     @action.setter
     def action(self, v):
-        if v in ("DMRSJ"):
+        if v in "DMRSJ":
             self._action = v
 
     def proceed(self, options={}):
