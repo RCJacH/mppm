@@ -25,7 +25,9 @@ class FolderBrowser:
         self.frame.pack(expand=True, fill="both")
         self.path = tk.StringVar()
         self.null_threshold = tk.DoubleVar()
+        self.null_threshold.set(-100)
         self.empty_threshold = tk.DoubleVar()
+        self.empty_threshold.set(-100)
         self.noBackup = tk.BooleanVar()
         self.keepMonoize = tk.BooleanVar()
         self.keepMonoize.set(True)
@@ -163,7 +165,7 @@ class FolderBrowser:
         )
         en_null_threshold = ttk.Entry(null_threshold, justify="center")
         en_null_threshold.insert(
-            0, "{:.20f}".format(self._FileList.options["null_threshold"]).rstrip("0")
+            0, "{:.20f}".format(self.null_threshold.get()).rstrip("0")
         )
         en_null_threshold.pack(side="bottom")
 
@@ -179,7 +181,7 @@ class FolderBrowser:
         )
         en_empty_threshold = ttk.Entry(empty_threshold, justify="center")
         en_empty_threshold.insert(
-            0, "{:.20f}".format(self._FileList.options["empty_threshold"]).rstrip("0")
+            0, "{:.20f}".format(self.empty_threshold.get()).rstrip("0")
         )
         en_empty_threshold.pack(side="bottom")
 
