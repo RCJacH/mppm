@@ -34,7 +34,7 @@ class AudioFile:
         )
         self._filepath = filepath
         self._file = None
-        self.blocksize = blocksize
+        self.blocksize = None if blocksize != "None" else int(blocksize)
         self._channels = None
         self._validChannel = 0
         self._debug = debug

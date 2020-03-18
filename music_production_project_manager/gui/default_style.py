@@ -19,6 +19,7 @@ class DefaultSetting(core.Settings, core.Style):
         self.setup_labelframe()
         self.setup_label()
         self.setup_entry()
+        self.setup_combobox()
         self.setup_button()
         self.setup_checkbutton()
         self.setup_scrollbar()
@@ -62,6 +63,15 @@ class DefaultSetting(core.Settings, core.Style):
     def setup_entry(self):
         self.configure(
             "TEntry",
+            background=self.color("input.background"),
+            font=self.font("p"),
+            padding=[4, 8] * 2,
+            relief="flat",
+        )
+
+    def setup_combobox(self):
+        self.configure(
+            "TCombobox",
             background=self.color("input.background"),
             font=self.font("p"),
             padding=[4, 8] * 2,
