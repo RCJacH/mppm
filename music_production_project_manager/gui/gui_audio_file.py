@@ -130,7 +130,26 @@ class FolderBrowser:
         top = ttk.Frame(frame)
         bottom = ttk.Frame(frame)
 
-        lb_null_threshold = ttk.Label(None, text="Null threshold", padding=[8, 0, 8, 0])
+        lb_blocksize = ttk.Label(None, text="Blocksize", padding=[8, 0] * 2)
+        blocksize = ttk.LabelFrame(
+            top,
+            labelwidget=lb_blocksize,
+            text="Blocksize",
+            labelanchor="n",
+            borderwidth=1,
+            padding=[8, 8, 8, 16],
+            relief="sunken",
+        )
+        cb_blocksize = ttk.Combobox(
+            blocksize,
+            justify="center",
+            values=["None", 24000, 44100, 48000, 88200, 96000, 176400, 192000, 384000],
+        )
+        cb_blocksize.set("None")
+        cb_blocksize.pack(side="bottom")
+        self.blocksize = cb_blocksize
+
+        lb_null_threshold = ttk.Label(None, text="Null threshold", padding=[8, 0] * 2)
         null_threshold = ttk.LabelFrame(
             top,
             labelwidget=lb_null_threshold,
@@ -146,9 +165,7 @@ class FolderBrowser:
         )
         en_null_threshold.pack(side="bottom")
 
-        lb_empty_threshold = ttk.Label(
-            None, text="Empty threshold", padding=[8, 0, 8, 0]
-        )
+        lb_empty_threshold = ttk.Label(None, text="Empty threshold", padding=[8, 0] * 2)
         empty_threshold = ttk.LabelFrame(
             top,
             labelwidget=lb_empty_threshold,
@@ -169,7 +186,8 @@ class FolderBrowser:
         )
 
         self.bt_analyze.pack(side="left", expand=True, fill="x")
-        null_threshold.pack(side="left", expand=True, fill="x", padx=[0, 4])
+        blocksize.pack(side="left", expand=True, fill="x", padx=[0, 4])
+        null_threshold.pack(side="left", expand=True, fill="x", padx=[4, 4])
         empty_threshold.pack(side="left", expand=True, fill="x", padx=[4, 0])
         top.pack(expand=True, fill="x")
         bottom.pack(expand=True, fill="x", pady=8)
@@ -188,7 +206,11 @@ class FolderBrowser:
             return
 
         self.stage(-1)
-        options = {"null_threshold": self.null_threshold.get()}
+        options = {
+            "null_threshold": self.null_threshold.get(),
+            "empty_threshold": self.empty_threshold.get(),
+            "blocksize": self.blocksize.get(),
+        }
         self._FileList.update_options(options)
         self.file_tree.delete(*self.file_tree.get_children())
         for file in self._FileList.search_folder(self.path.get()):
