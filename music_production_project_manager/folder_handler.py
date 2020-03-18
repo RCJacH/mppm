@@ -110,9 +110,10 @@ class FileList:
 
     def search_folder(self, folder, populate=True, func=None):
         for f in _iterate_files(folder):
+            af = _create_analysis(f, self._options)
             if populate:
-                self._files.append(_create_analysis(f, self._options))
-            yield f
+                self._files.append(af)
+            yield af
 
     def proceed(self):
         if not self.options.pop("noBackup", False):
@@ -121,7 +122,7 @@ class FileList:
             file.proceed(options=self.options)
         self.folderpath = self.folderpath
 
-    def backup(self, folder="bak", newFolder=True, replace=False, noAction=False):
+    def backup(self, folder="bak", newFolder=True, read_only=False):
         def join(*args, inc="", ext=""):
             return (
                 os.path.join(*args).rstrip("\\")
@@ -138,14 +139,13 @@ class FileList:
                 i += 1
             return name
 
+        def backup(file):
+            filename, ext = os.path.splitext(file._filename)
+            newfile = unique(folderpath, filename, new=False, ext=ext)
+            return file.backup(newfile, read_only=read_only)
+
         bakpath, bakfolder = os.path.split(folder)
         path = self.folderpath if (not bakpath or bakpath.isspace) else bakpath
         folderpath = unique(path, bakfolder, new=newFolder)
-        if not os.path.exists(folderpath) and not noAction:
-            os.makedirs(folderpath)
 
-        for file in self._files:
-            filename, ext = os.path.splitext(file._filename)
-            newfile = unique(folderpath, filename, new=(not replace), ext=ext)
-            if not noAction:
-                shutil.copyfile(file._filepath, newfile)
+        return [backup(f) for f in self._files]
