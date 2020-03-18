@@ -109,6 +109,9 @@ class AudioFile:
             self._action = v
 
     def proceed(self, options={}):
+        if options.pop("read_only", False):
+            return self.action
+
         noM = "skipMonoize" in options and options["skipMonoize"]
         noR = "skipRemove" in options and options["skipRemove"]
         if self._action == "D":
@@ -211,35 +214,15 @@ class AudioFile:
             info.set_info(sampleblock)
         return info
 
-    def backup(self, folder="bak", newfolder=True, replace=False, noAction=False):
-        def join(*args, inc="", ext=""):
-            return (
-                os.path.join(*args).rstrip("\\")
-                + (inc if inc != "0" else "")
-                + (ext if ext else "")
-            )
-
-        def unique(*args, new=False, **kwargs):
-            if not new:
-                return join(*args, **kwargs)
-            name = ""
-            i = 0
-            while os.path.exists(name := join(*args, inc=str(i), **kwargs)):
-                i += 1
-            return name
-
-        bakpath, bakfolder = os.path.split(folder)
-        path = bakpath if bakpath != "" else self.path
-
-        foldername = unique(path, bakfolder, new=newfolder)
-        if not os.path.exists(foldername) and not noAction:
-            os.makedirs(foldername)
-
-        filename, ext = os.path.splitext(self._filename)
-        newfile = unique(foldername, filename, new=(not replace), ext=ext)
-        if not noAction:
-            shutil.copyfile(self._filepath, newfile)
-        return newfile
+    def backup(self, filepath, read_only=False):
+        try:
+            if not read_only:
+                shutil.copy2(self._filepath, filepath)
+            return filepath
+        except FileNotFoundError:
+            path = os.path.split(filepath)[0]
+            os.makedirs(path)
+            return self.backup(filepath)
 
     def monoize(self, channel=None):
         if self.file and (channel or self.isFakeStereo):

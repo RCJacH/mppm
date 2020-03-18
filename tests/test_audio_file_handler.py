@@ -13,7 +13,7 @@ from soundfile import read
 from music_production_project_manager.audio_file_handler import AudioFile
 
 
-def get_audio_path(name, ext=".wav"):
+def get_audio_path(name="", ext=".wav"):
     return os.path.join("tests", "audio_files", name + ext)
 
 
@@ -102,7 +102,7 @@ class TestAudioFile:
         with AudioFile(get_audio_path("empty"), analyze=False) as obj:
             assert obj.file
 
-    def test_file_setter_error(self, mocker):
+    def test_file_setter_error(self):
         obj = AudioFile("error")
         assert not os.path.exists("error")
         assert obj.filepath == "error"
@@ -159,46 +159,25 @@ class TestAudioFile:
             obj.proceed()
             getattr(obj, func).assert_called()
 
-    @pytest.mark.parametrize(
-        "params, result",
-        [
-            pytest.param({}, ("bak", "sin-m.wav"), id="default"),
-            pytest.param(
-                {"folderExists": True}, ("bak1", "sin-m.wav"), id="inc-foldername"
-            ),
-            pytest.param(
-                {"fileExists": True}, ("bak", "sin-m1.wav"), id="inc-filename"
-            ),
-            pytest.param(
-                {"fileExists": True, "replace": True},
-                ("bak", "sin-m.wav"),
-                id="replace",
-            ),
-        ],
-    )
-    def test_backup(self, params, result, tmp_file):
+    def test_proceed_read_only(self, mocker):
+        with AudioFile("empty") as obj:
+            assert obj.proceed(options={"read_only": True}) == "Default"
+            obj.action = "M"
+            obj.monoize = mocker.Mock()
+            assert obj.proceed(options={"read_only": True}) == "Monoize"
+            assert not obj.monoize.called
+
+    def test_backup(self, tmp_file):
         file, testfile = tmp_file
         filename = os.path.split(testfile)[1]
         tmppath = os.path.split(file)[0]
         bakpath = os.path.join(tmppath, "bak")
-        if "folderExists" in params:
-            os.makedirs(bakpath)
-            bakpath += "1"
-            params.pop("folderExists")
-        if "fileExists" in params:
-            os.makedirs(bakpath)
-            with open(os.path.join(bakpath, filename), "w") as f:
-                f.write("")
-            params.pop("fileExists")
-            params["newfolder"] = False
+        bakfile = os.path.join(bakpath, filename)
         with AudioFile(file) as obj:
-            if "noAction" in params:
-                assert obj.backup(**params) == result
-            else:
-                f = obj.backup(**params)
-                newf = os.path.join(tmppath, *result)
-                assert f == newf
-                assert os.path.exists(newf)
+            assert obj.backup(bakfile, read_only=True) == bakfile
+            assert not os.path.exists(bakfile)
+            assert obj.backup(bakfile) == bakfile
+            assert os.path.exists(bakfile)
 
     @pytest.mark.parametrize(
         "tmp_file, params, result",
