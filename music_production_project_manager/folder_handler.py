@@ -34,9 +34,29 @@ Potential additions supported by PySoundFile library
 """
 
 
+def _iterate_files(folder):
+    return (os.path.join(folder, f) for f in _list_audio_files(folder))
+
+
+def _create_analysis(filepath, options):
+    return AudioFile(
+        filepath,
+        null_threshold=options["null_threshold"],
+        empty_threshold=options["empty_threshold"],
+    )
+
+
+def _list_audio_files(folder):
+    return (f for f in os.listdir(folder) if _is_audio_file(f))
+
+
+def _is_audio_file(file):
+    _, file_extension = os.path.splitext(file)
+    return file_extension.upper() in (name.upper() for name in extensions)
+
+
 class FileList:
     def __init__(self, folder=None, options=None):
-        self._folderpath = folder
         self._options = options or {
             "noBackup": False,
             "backup": {"folder": "bak"},
@@ -44,14 +64,10 @@ class FileList:
             "empty_threshold": -100,
         }
         self._files = []
-        # self.filenames = []
-        # self.empty_files = []
-        # self.mono_files = []
-        # self.fake_stereo_files = []
-        # self.stereo_files = []
-        # self.multichannel_files = []
-        if folder and os.path.exists(folder):
-            self.search_folder(folder)
+        self._folderpath = ""
+        self.folderpath = folder
+        # if folder and os.path.exists(folder):
+        # self.search_folder(folder)
 
     def __enter__(self):
         return self
@@ -59,32 +75,51 @@ class FileList:
     def __exit__(self, *args):
         del self
 
-    def search_folder(self, folder):
-        self._folderpath = folder
-        self._files = self.populate(folder)
+    files = property(lambda self: self._files)
 
-    def populate(self, folder):
-        return [
-            AudioFile(
-                os.path.join(folder, f),
-                null_threshold=self._options["null_threshold"],
-                empty_threshold=self._options["empty_threshold"],
-            )
-            for f in self._list_audio_files(folder)
-        ]
+    fileCount = property(lambda self: len(self.files))
+
+    filenames = property(lambda self: [f.filename for f in self.files])
+
+    filepaths = property(lambda self: [f.filepath for f in self.files])
+
+    empty_files = property(lambda self: [f for f in self.files if f.isEmpty])
+
+    fake_stereo_files = property(lambda self: [f for f in self.files if f.isFakeStereo])
+
+    multichannel_files = property(
+        lambda self: [f for f in self.files if f.isMultichannel]
+    )
+
+    options = property(lambda self: dict(self._options))
+
+    @property
+    def folderpath(self):
+        return self._folderpath
+
+    @folderpath.setter
+    def folderpath(self, folder):
+        if folder and os.path.exists(folder):
+            self._files = []
+            self._folderpath = folder
+            for file in self.search_folder(folder):
+                pass
 
     def update_options(self, options={}):
         self._options.update(options)
 
+    def search_folder(self, folder, populate=True, func=None):
+        for f in _iterate_files(folder):
+            if populate:
+                self._files.append(_create_analysis(f, self._options))
+            yield f
+
     def proceed(self):
-        if "noBackup" not in self._options or not self._options["noBackup"]:
-            if "backup" in self._options:
-                self.backup(**self._options["backup"])
-            else:
-                self.backup()
+        if not self.options.pop("noBackup", False):
+            self.backup(**self.options.pop("backup", {}))
         for file in self._files:
-            file.proceed(options=self._options)
-        self._files = self.populate(self._folderpath)
+            file.proceed(options=self.options)
+        self.folderpath = self.folderpath
 
     def backup(self, folder="bak", newFolder=True, replace=False, noAction=False):
         def join(*args, inc="", ext=""):
@@ -104,7 +139,7 @@ class FileList:
             return name
 
         bakpath, bakfolder = os.path.split(folder)
-        path = self._folderpath if (not bakpath or bakpath.isspace) else bakpath
+        path = self.folderpath if (not bakpath or bakpath.isspace) else bakpath
         folderpath = unique(path, bakfolder, new=newFolder)
         if not os.path.exists(folderpath) and not noAction:
             os.makedirs(folderpath)
@@ -114,28 +149,3 @@ class FileList:
             newfile = unique(folderpath, filename, new=(not replace), ext=ext)
             if not noAction:
                 shutil.copyfile(file._filepath, newfile)
-
-    files = property(lambda self: self._files)
-
-    fileCount = property(lambda self: len(self.files))
-
-    filenames = property(lambda self: [f.filename for f in self.files])
-
-    filepaths = property(lambda self: [f.filepath for f in self.files])
-
-    empty_files = property(lambda self: [f for f in self.files if f.isEmpty])
-
-    fake_stereo_files = property(lambda self: [f for f in self.files if f.isFakeStereo])
-
-    multichannel_files = property(
-        lambda self: [f for f in self.files if f.isMultichannel]
-    )
-
-    options = property(lambda self: self._options)
-
-    def _list_audio_files(self, folder):
-        return [f for f in os.listdir(folder) if self._is_audio_file(f)]
-
-    def _is_audio_file(self, file):
-        _, file_extension = os.path.splitext(file)
-        return file_extension.upper() in (name.upper() for name in extensions)

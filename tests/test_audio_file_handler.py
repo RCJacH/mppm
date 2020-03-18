@@ -102,7 +102,7 @@ class TestAudioFile:
         with AudioFile(get_audio_path("empty"), analyze=False) as obj:
             assert obj.file
 
-    def test_file_setter_error(self, mocker):
+    def test_file_setter_error(self):
         obj = AudioFile("error")
         assert not os.path.exists("error")
         assert obj.filepath == "error"
@@ -158,6 +158,15 @@ class TestAudioFile:
             print(obj._channels, obj.isCorrelated, obj.isMono, obj.isFakeStereo)
             obj.proceed()
             getattr(obj, func).assert_called()
+
+    def test_proceed_read_only(self, mocker):
+        with AudioFile("empty") as obj:
+            assert obj.proceed(options={"read_only": True}) == "Default"
+            obj.action = "M"
+            obj.monoize = mocker.Mock()
+            assert obj.proceed(options={"read_only": True}) == "Monoize"
+            assert not obj.monoize.called
+
 
     @pytest.mark.parametrize(
         "params, result",
