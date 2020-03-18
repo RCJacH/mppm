@@ -27,8 +27,10 @@ class FolderBrowser:
         self.null_threshold = tk.DoubleVar()
         self.empty_threshold = tk.DoubleVar()
         self.noBackup = tk.BooleanVar()
-        self.skipMonoize = tk.BooleanVar()
-        self.skipRemove = tk.BooleanVar()
+        self.keepMonoize = tk.BooleanVar()
+        self.keepMonoize.set(True)
+        self.keepRemove = tk.BooleanVar()
+        self.keepRemove.set(True)
 
         self.current_stage = tk.IntVar()
         self.analyzed = tk.BooleanVar()
@@ -272,26 +274,28 @@ class FolderBrowser:
             bottom, text="Proceed", command=self.proceed_command
         )
         self.bt_proceed.pack(expand=True, fill="both")
-        backup = ttk.Checkbutton(
-            top,
+        backup = ttk.Frame(top)
+        lb_backup = ttk.Checkbutton(
+            backup,
             text="Back up to sub-folder: ",
             variable=self.noBackup,
             onvalue=False,
             offvalue=True,
         )
-        skipMonoize_button = ttk.Checkbutton(
-            top, text="Skip Monoize", variable=self.skipMonoize,
-        )
-        skipRemove_button = ttk.Checkbutton(
-            top, text="Skip Remove", variable=self.skipRemove,
-        )
-        address = ttk.Entry(top, width=16)
+        address = ttk.Entry(backup, width=16)
         address.insert(0, self._FileList.options["backup"]["folder"])
+        keepMonoize_button = ttk.Checkbutton(
+            top, text="Monoize", variable=self.keepMonoize,
+        )
+        keepRemove_button = ttk.Checkbutton(
+            top, text="Remove", variable=self.keepRemove,
+        )
 
-        backup.pack(side="left")
+        lb_backup.pack(side="left", expand=False)
         address.pack(side="left", expand=True, fill="x", padx=8)
-        skipMonoize_button.pack(side="left")
-        skipRemove_button.pack(side="left")
+        backup.pack(side="left", expand=True)
+        keepMonoize_button.pack(side="left", expand=True)
+        keepRemove_button.pack(side="left", expand=True)
 
         top.pack(expand=False, fill="x", pady=16)
         bottom.pack(expand=True, fill="both")
@@ -301,8 +305,8 @@ class FolderBrowser:
     def proceed_command(self):
         options = {
             "noBackup": self.noBackup.get(),
-            "skipMonoize": self.skipMonoize.get(),
-            "skipRemove": self.skipRemove.get(),
+            "monoize": self.keepMonoize.get(),
+            "remove": self.keepRemove.get(),
         }
         self._FileList.update_options(options)
         self._FileList.proceed()
