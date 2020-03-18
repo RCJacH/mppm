@@ -66,8 +66,6 @@ class FileList:
         self._files = []
         self._folderpath = ""
         self.folderpath = folder
-        # if folder and os.path.exists(folder):
-        # self.search_folder(folder)
 
     def __enter__(self):
         return self
