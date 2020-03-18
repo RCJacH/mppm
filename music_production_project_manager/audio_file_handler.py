@@ -34,7 +34,7 @@ class AudioFile:
         )
         self._filepath = filepath
         self._file = None
-        self.blocksize = None if blocksize != "None" else int(blocksize)
+        self.blocksize = None if str(blocksize) == "None" else int(blocksize)
         self._channels = None
         self._validChannel = 0
         self._debug = debug
@@ -112,18 +112,18 @@ class AudioFile:
         if options.pop("read_only", False):
             return self.action
 
-        noM = "skipMonoize" in options and options["skipMonoize"]
-        noR = "skipRemove" in options and options["skipRemove"]
+        m = options.pop("monoize", True)
+        r = options.pop("remove", True)
         if self._action == "D":
-            if self.isFakeStereo and not noM:
+            if self.isFakeStereo and m:
                 self.monoize()
-            elif self.isEmpty and not noR:
+            elif self.isEmpty and r:
                 self.remove()
-        if self._action == "M" and not noM:
+        if self._action == "M" and m:
             self.monoize(
                 channel=options.pop("channel") if "channel" in options else None
             )
-        if self._action == "R" and not noR:
+        if self._action == "R" and r:
             self.remove(forced=True)
         if self._action == "S":
             if "delimiter" in options:
