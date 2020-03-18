@@ -190,9 +190,8 @@ class FolderBrowser:
         self.stage(-1)
         options = {"null_threshold": self.null_threshold.get()}
         self._FileList.update_options(options)
-        self._FileList.search_folder(self.path.get())
         self.file_tree.delete(*self.file_tree.get_children())
-        for file in self._FileList.files:
+        for file in self._FileList.search_folder(self.path.get()):
             self.file_tree.insert(
                 "",
                 "end",
@@ -262,7 +261,7 @@ class FolderBrowser:
             top, text="Skip Monoize", variable=self.skipMonoize,
         )
         skipRemove_button = ttk.Checkbutton(
-            top, text="Skip Monoize", variable=self.skipRemove,
+            top, text="Skip Remove", variable=self.skipRemove,
         )
         address = ttk.Entry(top, width=16)
         address.insert(0, self._FileList.options["backup"]["folder"])
