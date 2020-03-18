@@ -214,9 +214,15 @@ class AudioFile:
             info.set_info(sampleblock)
         return info
 
-    def backup(self, filepath):
-        shutil.copyfile(self._filepath, filepath)
-        return filepath
+    def backup(self, filepath, read_only=False):
+        try:
+            if not read_only:
+                shutil.copy2(self._filepath, filepath)
+            return filepath
+        except FileNotFoundError:
+            path = os.path.split(filepath)[0]
+            os.makedirs(path)
+            return self.backup(filepath)
 
     def monoize(self, channel=None):
         if self.file and (channel or self.isFakeStereo):
