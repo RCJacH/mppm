@@ -1,4 +1,5 @@
 import os
+import string
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
@@ -13,6 +14,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
+_valid_path_chars = frozenset(f"-_.() {string.ascii_letters}{string.digits}")
 
 class FolderBrowser:
     def __init__(self, master=None, *args, **kwargs):
@@ -33,6 +36,8 @@ class FolderBrowser:
         self.keepMonoize.set(True)
         self.keepRemove = tk.BooleanVar()
         self.keepRemove.set(True)
+        self.backupPath = tk.StringVar()
+        self.backupPath.set(self._FileList.options["backup"]["folder"])
 
         self.current_stage = tk.IntVar()
         self.analyzed = tk.BooleanVar()
@@ -308,8 +313,13 @@ class FolderBrowser:
             onvalue=False,
             offvalue=True,
         )
-        address = ttk.Entry(backup, width=16)
-        address.insert(0, self._FileList.options["backup"]["folder"])
+        address = ttk.Entry(
+            backup,
+            width=16,
+            textvariable=self.backupPath,
+            validate="key",
+            validatecommand=(master.register(self.path_validation), "%S"),
+        )
         keepMonoize_button = ttk.Checkbutton(
             top, text="Monoize", variable=self.keepMonoize,
         )
@@ -327,6 +337,9 @@ class FolderBrowser:
         bottom.pack(expand=True, fill="both")
 
         self.fr_actions = frame
+
+    def path_validation(self, S):
+        return S in _valid_path_chars
 
     def proceed_command(self):
         options = {
