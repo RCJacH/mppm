@@ -163,7 +163,12 @@ class FolderBrowser:
             padding=[8, 8, 8, 16],
             relief="sunken",
         )
-        en_null_threshold = ttk.Entry(null_threshold, justify="center")
+        en_null_threshold = ttk.Entry(
+            null_threshold,
+            justify="center",
+            validate="key",
+            validatecommand=(master.register(self.null_validation), "%P"),
+        )
         en_null_threshold.insert(
             0, "{:.20f}".format(self.null_threshold.get()).rstrip("0")
         )
@@ -179,7 +184,12 @@ class FolderBrowser:
             padding=[8, 8, 8, 16],
             relief="sunken",
         )
-        en_empty_threshold = ttk.Entry(empty_threshold, justify="center")
+        en_empty_threshold = ttk.Entry(
+            empty_threshold,
+            justify="center",
+            validate="key",
+            validatecommand=(master.register(self.empty_validation), "%P"),
+        )
         en_empty_threshold.insert(
             0, "{:.20f}".format(self.empty_threshold.get()).rstrip("0")
         )
@@ -197,6 +207,20 @@ class FolderBrowser:
         bottom.pack(expand=True, fill="x", pady=8)
 
         self.fr_input = frame
+
+    def null_validation(self, P):
+        try:
+            self.null_threshold.set(float(-300 if not P or P == "-" else P))
+            return True
+        except ValueError:
+            return False
+
+    def empty_validation(self, P):
+        try:
+            self.empty_threshold.set(float(-300 if not P or P == "-" else P))
+            return True
+        except ValueError:
+            return False
 
     def analyze_command(self):
         def check(v):
