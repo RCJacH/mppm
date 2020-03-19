@@ -102,6 +102,19 @@ class TestAudioFile:
         with AudioFile(get_audio_path("empty"), analyze=False) as obj:
             assert obj.file
 
+    def test_file_names(self):
+        filepath = get_audio_path("empty")
+        pathname, basename = os.path.split(filepath)
+        filename = "empty"
+        extension = ".wav"
+        with AudioFile(filepath) as obj:
+            assert obj.filepath == filepath
+            assert obj.pathname == pathname
+            assert obj.basename == basename
+            assert obj.filename == filename
+            assert obj.extension == extension
+            assert obj.pathfile == filepath[:-4]
+
     def test_file_setter_error(self):
         obj = AudioFile("error")
         assert not os.path.exists("error")
@@ -155,7 +168,6 @@ class TestAudioFile:
     def test_proceed_default(self, mocker, file, func):
         with AudioFile(get_audio_path(file)) as obj:
             setattr(obj, func, mocker.Mock())
-            print(obj._channels, obj.isCorrelated, obj.isMono, obj.isFakeStereo)
             obj.proceed()
             getattr(obj, func).assert_called()
 
