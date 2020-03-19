@@ -77,7 +77,7 @@ class FileList:
 
     fileCount = property(lambda self: len(self.files))
 
-    filenames = property(lambda self: [f.filename for f in self.files])
+    basenames = property(lambda self: [f.basename for f in self.files])
 
     filepaths = property(lambda self: [f.filepath for f in self.files])
 
@@ -138,8 +138,7 @@ class FileList:
             return name
 
         def backup(file):
-            filename, ext = os.path.splitext(file._filename)
-            newfile = unique(folderpath, filename, new=False, ext=ext)
+            newfile = unique(folderpath, file.filename, new=False, ext=file.extension)
             return file.backup(newfile, read_only=read_only)
 
         bakpath, bakfolder = os.path.split(folder)
