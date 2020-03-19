@@ -30,7 +30,7 @@ class TestFileList:
                 {},
                 {
                     "fileCount": 9,
-                    "filenames": [x + ".wav" for x in audio_files],
+                    "basenames": [x + ".wav" for x in audio_files],
                     "filepaths": [
                         get_audio_path(filename=x + ".wav") for x in audio_files
                     ],
