@@ -156,31 +156,6 @@ class AudioFile:
         if v in "DMRSJ":
             self._action = v
 
-    def proceed(self, options={}):
-        if options.pop("read_only", False):
-            return self.action
-
-        m = options.pop("monoize", True)
-        r = options.pop("remove", True)
-        j = options.pop("join", True)
-        delimiter = options.pop("delimiter", ".")
-
-        if self._action == "D":
-            if self.isEmpty and r:
-                return self.remove()
-            if self.isFakeStereo and m:
-                return self.monoize()
-        if self._action == "M" and m:
-            return self.monoize(
-                channel=options.pop("channel") if "channel" in options else None
-            )
-        if self._action == "R" and r:
-            return self.remove(forced=True)
-        if self._action == "S":
-            return self.split(delimiter=delimiter)
-        if self._action == "J" and j:
-            return self.join()
-
     def analyze(self):
         if self.file:
             info = self._analyze_blocks()
@@ -217,6 +192,29 @@ class AudioFile:
         for sampleblock in self.file.blocks(blocksize=self.blocksize, always_2d=True):
             info.set_info(sampleblock)
         return info
+
+    def proceed(self, options={}):
+        if options.pop("read_only", False):
+            return self.action
+
+        m = options.pop("monoize", True)
+        r = options.pop("remove", True)
+        j = options.pop("join", True)
+        delimiter = options.pop("delimiter", ".")
+
+        if self._action == "D":
+            if self.isEmpty and r:
+                return self.remove(**options.pop("remove_options", {}))
+            if self.isFakeStereo and m:
+                return self.monoize(**options.pop("monoize_options", {}))
+        if self._action == "M" and m:
+            return self.monoize(**options.pop("monoize_options", {}))
+        if self._action == "R" and r:
+            return self.remove(forced=True)
+        if self._action == "S":
+            return self.split(**options.pop("split_options", {}))
+        if self._action == "J" and j:
+            return self.join(**options.pop("join_options", {}))
 
     def backup(self, filepath, read_only=False):
         try:
