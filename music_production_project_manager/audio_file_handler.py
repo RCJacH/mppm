@@ -8,6 +8,7 @@ from soundfile import SoundFile as sf
 from soundfile import SEEK_END
 
 from music_production_project_manager.analyze import SampleblockChannelInfo
+from music_production_project_manager.utils import lazy_property
 
 import logging
 
@@ -34,6 +35,7 @@ class AudioFile:
         )
         self._filepath = filepath
         self._file = None
+        self._location = None
         self.blocksize = None if str(blocksize) == "None" else int(blocksize)
         self._channels = None
         self._validChannel = 0
@@ -46,7 +48,6 @@ class AudioFile:
         self.null_threshold = 10 ** (null_threshold / 20)
         self.empty_threshold = 10 ** (empty_threshold / 20)
         if filepath is not None and analyze:
-            self._path, self._filename = os.path.split(filepath)
             self.file = filepath
 
     def __del__(self):
@@ -60,11 +61,58 @@ class AudioFile:
     def __exit__(self, *args):
         self.close()
 
-    def __str__(self):
-        empty = self.isEmpty and "Empty" or ""
-        fake = self.isFakeStereo and "FakeStereo" or ""
-        info = "\t".join(["{0.filename}", "Channels: {0.channels}", empty, fake])
-        return info.format(self)
+    @lazy_property
+    def location(self):
+        path, base = os.path.split(self._filepath)
+        pathfile, ext = os.path.splitext(self._filepath)
+        file = base[:-len(ext)]
+        self._location = [path, base, file, ext, pathfile]
+        return self._location
+
+    filepath = property(lambda self: self._filepath)
+    pathname = property(lambda self: self.location[0])
+    basename = property(lambda self: self.location[1])
+    filename = property(lambda self: self.location[2])
+    extension = property(lambda self: self.location[3])
+    pathfile = property(lambda self: self.location[4])
+
+    validChannel = property(lambda self: self._validChannel)
+
+    countValidChannel = property(lambda self: bin(self.validChannel).count("1"))
+
+    channels = property(
+        lambda self: self._file.channels if self._file else self._channels
+    )
+
+    flag = property(lambda self: self._flag)
+
+    isCorrelated = property(lambda self: self._isCorrelated)
+
+    sample = property(lambda self: self._sample)
+
+    samplerate = property(lambda self: self._samplerate)
+
+    isEmpty = property(lambda self: self.validChannel == 0 or self.channels == 0)
+
+    isMono = property(lambda self: self.channels == 1 and not self.isEmpty)
+
+    isFakeStereo = property(
+        lambda self: (self.isCorrelated or self.countValidChannel == 1)
+        and self.channels == 2
+        and not self.isEmpty
+    )
+
+    isStereo = property(
+        lambda self: self.channels == 2
+        and self.countValidChannel == 2
+        and not self.isCorrelated
+    )
+
+    isMultichannel = property(
+        lambda self: self.channels > 2
+        and self.countValidChannel > 2
+        and not self.isCorrelated
+    )
 
     def close(self):
         if self._file:
@@ -114,68 +162,24 @@ class AudioFile:
 
         m = options.pop("monoize", True)
         r = options.pop("remove", True)
+        j = options.pop("join", True)
+        delimiter = options.pop("delimiter", ".")
+
         if self._action == "D":
+            if self.isEmpty and r:
+                return self.remove()
             if self.isFakeStereo and m:
-                self.monoize()
-            elif self.isEmpty and r:
-                self.remove()
+                return self.monoize()
         if self._action == "M" and m:
-            self.monoize(
+            return self.monoize(
                 channel=options.pop("channel") if "channel" in options else None
             )
         if self._action == "R" and r:
-            self.remove(forced=True)
+            return self.remove(forced=True)
         if self._action == "S":
-            if "delimiter" in options:
-                self.split(delimiter=options.pop("delimiter"))
-            else:
-                self.split()
-        if self._action == "J":
-            self.join()
-
-    filepath = property(lambda self: self._filepath)
-
-    path = property(lambda self: self._path)
-
-    filename = property(lambda self: self._filename)
-
-    validChannel = property(lambda self: self._validChannel)
-
-    countValidChannel = property(lambda self: bin(self.validChannel).count("1"))
-
-    channels = property(
-        lambda self: self._file.channels if self._file else self._channels
-    )
-
-    flag = property(lambda self: self._flag)
-
-    isCorrelated = property(lambda self: self._isCorrelated)
-
-    sample = property(lambda self: self._sample)
-
-    samplerate = property(lambda self: self._samplerate)
-
-    isEmpty = property(lambda self: self.validChannel == 0 or self.channels == 0)
-
-    isMono = property(lambda self: self.channels == 1 and not self.isEmpty)
-
-    isFakeStereo = property(
-        lambda self: (self.isCorrelated or self.countValidChannel == 1)
-        and self.channels == 2
-        and not self.isEmpty
-    )
-
-    isStereo = property(
-        lambda self: self.channels == 2
-        and self.countValidChannel == 2
-        and not self.isCorrelated
-    )
-
-    isMultichannel = property(
-        lambda self: self.channels > 2
-        and self.countValidChannel > 2
-        and not self.isCorrelated
-    )
+            return self.split(delimiter=delimiter)
+        if self._action == "J" and j:
+            return self.join()
 
     def analyze(self):
         if self.file:
@@ -243,15 +247,15 @@ class AudioFile:
 
     def split(self, delimiter="."):
         if self.file and self.channels == 2:
-            path, ext = os.path.splitext(self._filepath)
             for i, ch in enumerate(["L", "R"]):
                 self.file.seek(0)
                 data = self.file.read()[i]
                 st = self.file.subtype
                 ed = self.file.endian
                 fm = self.file.format
+                print(self.pathfile + delimiter + ch + self.extension)
                 with sf(
-                    path + delimiter + ch + ext,
+                    self.pathfile + delimiter + ch + self.extension,
                     "w",
                     self._samplerate,
                     1,
@@ -264,15 +268,14 @@ class AudioFile:
             self.remove(forced=True)
 
     def join(self, other=None, remove=True):
-        path, ext = os.path.splitext(self._filepath)
-        s = re.match(r"(.+)([^\a])([lL]|[rR])$", path)
+        s = re.match(r"(.+)([^\a])([lL]|[rR])$", self.pathfile)
         if s:
             base, delimiter, ch = s.groups()
             chs = ["L", "R"]
             chnum = chs.index(ch)
             data = self.file.read(always_2d=True)
             chs.remove(ch)
-            newfile = base + delimiter + chs[0] + ext
+            newfile = base + delimiter + chs[0] + self.extension
             if not os.path.exists(newfile):
                 return
             with AudioFile(newfile) as f:
@@ -285,7 +288,16 @@ class AudioFile:
             st = self.file.subtype
             ed = self.file.endian
             fm = self.file.format
-            with sf(base + ext, "w", self._samplerate, 2, st, ed, fm, True) as f:
+            with sf(
+                base + self.extension,
+                "w",
+                self._samplerate,
+                2,
+                st,
+                ed,
+                fm,
+                True,
+            ) as f:
                 f.write(data)
             if remove:
                 self.close()
