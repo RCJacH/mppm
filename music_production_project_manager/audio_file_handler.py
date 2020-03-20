@@ -61,6 +61,9 @@ class AudioFile:
     def __exit__(self, *args):
         self.close()
 
+    def __eq__(self, other):
+        return isinstance(other, AudioFile) and self._filepath == other._filepath
+
     @lazy_property
     def location(self):
         path, base = os.path.split(self._filepath)
