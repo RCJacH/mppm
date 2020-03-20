@@ -29,7 +29,6 @@ class TestFileList:
             (
                 {},
                 {
-                    "fileCount": 9,
                     "basenames": [x + ".wav" for x in audio_files],
                     "filepaths": [
                         get_audio_path(filename=x + ".wav") for x in audio_files
@@ -50,11 +49,11 @@ class TestFileList:
 
     def test_folderpath(self):
         with FileList() as obj:
-            assert len(obj.files) == 0
+            assert len(obj) == 0
             obj.folderpath = get_audio_path()
             assert obj.folderpath == get_audio_path()
-            assert len(obj.files) == len(audio_files)
-            assert set(x.filepath for x in obj.files) == set(
+            assert len(obj) == len(audio_files)
+            assert set(x.filepath for x in obj) == set(
                 get_audio_path(x + ".wav") for x in audio_files
             )
 
@@ -80,12 +79,8 @@ class TestFileList:
         "params",
         [
             pytest.param({}, id="default"),
-            pytest.param(
-                {"folderExists": True}, id="inc-foldername"
-            ),
-            pytest.param(
-                {"fileExists": True, "newFolder":False}, id="inc-filename"
-            ),
+            pytest.param({"folderExists": True}, id="inc-foldername"),
+            pytest.param({"fileExists": True, "newFolder": False}, id="inc-filename"),
         ],
     )
     def test_backup(self, tmp_path, params):
@@ -112,4 +107,3 @@ class TestFileList:
             f = obj.backup(**params)
             assert os.path.exists(bakpath)
             assert set(os.listdir(bakpath)) == set(f + ".wav" for f in audio_files)
-
