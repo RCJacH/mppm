@@ -124,6 +124,10 @@ class AudioFile:
             yield self._file.read(*args, **kwargs)
             self._file.seek(0)
 
+    def remove(self):
+        self.close()
+        os.remove(self.filepath)
+
     @property
     def file(self):
         return self._file
