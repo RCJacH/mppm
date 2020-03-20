@@ -121,12 +121,6 @@ class TestAudioFile:
         assert obj.filepath == "error"
         assert obj.file == None
 
-    def test_remove(self, tmp_file):
-        file, testfile = tmp_file
-        with AudioFile(file) as obj:
-            obj.remove()
-            assert not os.path.exists(file)
-
     def test_action(self):
         def setter(obj, x):
             obj.action = x
