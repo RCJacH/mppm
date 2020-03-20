@@ -115,6 +115,11 @@ class TestAudioFile:
             assert obj.extension == extension
             assert obj.pathfile == filepath[:-4]
 
+    def test__eq__(self):
+        filepath = get_audio_path("empty")
+        with AudioFile(filepath) as obj, AudioFile(filepath) as obj2:
+            assert obj == obj2
+
     def test_file_setter_error(self):
         obj = AudioFile("error")
         assert not os.path.exists("error")

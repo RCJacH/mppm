@@ -1,7 +1,8 @@
 import os
 import shutil
-from music_production_project_manager.audio_file_handler import AudioFile
 
+from music_production_project_manager.audio_file_handler import AudioFile
+from music_production_project_manager.utils import lazy_property
 
 extensions = [".wav", ".wave"]
 """
@@ -73,9 +74,19 @@ class FileList:
     def __exit__(self, *args):
         del self
 
-    files = property(lambda self: self._files)
+    def __iter__(self):
+        return iter(self._files)
 
-    fileCount = property(lambda self: len(self.files))
+    def __len__(self):
+        return len(self.files) if self.folderpath else 0
+
+    def __getitem__(self, key):
+        return self.files[key]
+
+    @lazy_property
+    def files(self):
+        [x for x in self.search_folder(self._folderpath)]
+        return self._files
 
     basenames = property(lambda self: [f.basename for f in self.files])
 
@@ -100,8 +111,6 @@ class FileList:
         if folder and os.path.exists(folder):
             self._files = []
             self._folderpath = folder
-            for file in self.search_folder(folder):
-                pass
 
     def update_options(self, options={}):
         self._options.update(options)
@@ -145,4 +154,4 @@ class FileList:
         path = self.folderpath if (not bakpath or bakpath.isspace) else bakpath
         folderpath = unique(path, bakfolder, new=newFolder)
 
-        return [backup(f) for f in self._files]
+        return [backup(f) for f in self.files]
