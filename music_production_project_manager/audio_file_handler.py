@@ -65,7 +65,7 @@ class AudioFile:
     def location(self):
         path, base = os.path.split(self._filepath)
         pathfile, ext = os.path.splitext(self._filepath)
-        file = base[:-len(ext)]
+        file = base[: -len(ext)]
         self._location = [path, base, file, ext, pathfile]
         return self._location
 
@@ -85,6 +85,8 @@ class AudioFile:
     )
 
     flag = property(lambda self: self._flag)
+
+    frames = property(lambda self: self._file.frames)
 
     isCorrelated = property(lambda self: self._isCorrelated)
 
@@ -149,11 +151,12 @@ class AudioFile:
             "R": "Remove",
             "S": "Split",
             "J": "Join",
+            "N": "None",
         }[self._action]
 
     @action.setter
     def action(self, v):
-        if v in "DMRSJ":
+        if v in "DMRSJN":
             self._action = v
 
     def analyze(self):
@@ -265,7 +268,7 @@ class AudioFile:
                     f.write(data)
             self.remove(forced=True)
 
-    def join(self, other=None, remove=True):
+    def join_old(self, other=None, remove=True):
         s = re.match(r"(.+)([^\a])([lL]|[rR])$", self.pathfile)
         if s:
             base, delimiter, ch = s.groups()
@@ -287,16 +290,55 @@ class AudioFile:
             ed = self.file.endian
             fm = self.file.format
             with sf(
-                base + self.extension,
-                "w",
-                self._samplerate,
-                2,
-                st,
-                ed,
-                fm,
-                True,
+                base + self.extension, "w", self._samplerate, 2, st, ed, fm, True,
             ) as f:
                 f.write(data)
             if remove:
                 self.close()
                 os.remove(self._filepath)
+
+    def join(self, others=None, remove=True, forced=False, newfile=None, delimiter="."):
+        if not others:
+            return
+
+        if not isinstance(others, list):
+            others = [others]
+
+        data = None
+        a = [self]
+        max_frames = self.frames
+        for each in others:
+            if not isinstance(each, AudioFile):
+                if not os.path.exists(each):
+                    raise FileNotFoundError
+                each = AudioFile(each)
+            a.append(each)
+            max_frames = max(max_frames, each.frames)
+
+        pos = len(others) // 10 + 2
+        newfile = (
+            (self.pathfile[-pos] == delimiter and self.pathfile[:-pos] + self.extension)
+            if (not newfile and delimiter)
+            else newfile
+            if newfile
+            else self.filepath
+        )
+
+        st = self.file.subtype
+        ed = self.file.endian
+        fm = self.file.format
+
+        for each in a:
+            if each.frames != self.frames and not forced:
+                return
+            d = each.file.read(always_2d=True)
+            if each.frames < max_frames and forced:
+                np.pad(d, (0, max_frames - each.frames), "constant")
+            data = d if data is None else np.concatenate((data, d), axis=1)
+
+        with sf(newfile, "w", self._samplerate, 1 + len(others), st, ed, fm, True) as f:
+            f.write(data)
+        if remove:
+            for each in a:
+                each.remove(forced=True)
+        return newfile

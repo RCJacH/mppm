@@ -255,7 +255,7 @@ class TestAudioFile:
             ({"delimiter": ".", "chFlag": 1}, False),
         ],
     )
-    def test_join(self, params, result, tmp_file):
+    def test_join_old(self, params, result, tmp_file):
         file, testfile = tmp_file
         path, ext = os.path.splitext(file)
         basename = path + params.pop("delimiter")
@@ -271,6 +271,65 @@ class TestAudioFile:
             else (1 if chFlag > 3 else "L")
         )
         with AudioFile(filepath=basename + chSelect + ext) as obj:
-            obj.join(**params)
+            obj.join_old(**params)
         assert os.path.exists(file) == result
         assert os.path.exists(basename + chSelect + ext) != result
+
+    @pytest.mark.parametrize(
+        "files, params, filename, others",
+        [
+            pytest.param(["sin-m"], {}, "sin-m.wav", False, id="noInput"),
+            pytest.param(
+                ["sin-m.L", "sin-m.R"], {}, "sin-m.wav", False, id="two_monos"
+            ),
+            pytest.param(["sin-m.L", "sin-m.R"], {"newfile": "sin.wav"}, "sin.wav", False, id="newfile"),
+            pytest.param(["sin-m.L", "sin-m.R"], {"remove": False}, "sin-m.wav", True, id="noRemove"),
+            pytest.param(["sin-m.L", "sin-m.R"], {"string": True}, "sin-m.wav", False, id="othersAsString"),
+            pytest.param(["sin-m.L", "sin-m.R"], {"error": FileNotFoundError}, "sin-m.wav", False, id="Nofile"),
+            pytest.param(["sin-m.1", "sin-m.2", 'sin-m.3'], {}, "sin-m.wav", False, id="multichannel"),
+        ],
+    )
+    def test_join(self, tmp_file, files, params, filename, others):
+        file, testfile = tmp_file
+        path, _ = os.path.split(file)
+        pathfile, ext = os.path.splitext(file)
+        delimiter = params.pop("delimiter", ".")
+        basename = pathfile + delimiter
+        b_string = params.pop("string", False)
+        error = params.pop("error", None)
+
+        if "newfile" in params:
+            params.update({"newfile": os.path.join(path, params["newfile"])})
+        files = [os.path.join(path, x + ext) for x in files]
+        for f in files:
+            if not f == file:
+                shutil.copyfile(file, f)
+        if file not in files:
+            os.remove(file)
+
+        root = files.pop(0)
+        with AudioFile(filepath=root) as obj:
+            if error is not None:
+                with pytest.raises(error) as e:
+                    obj.join(others=files[0][0:-2], **params)
+            else:
+                obj.join(others=files[0] if b_string else files, **params)
+                assert os.path.exists(os.path.join(path, filename))
+                assert all(os.path.exists(f) == others for f in files)
+
+    def test_join_different_size(self, tmp_file):
+        file, testfile = tmp_file
+        testpath, _ = os.path.split(testfile)
+        path, _ = os.path.split(file)
+        pathfile, ext = os.path.splitext(file)
+        testfile2 = os.path.join(testpath, "empty.wav")
+        file2 = os.path.join(path, "empty.wav")
+        shutil.copyfile(testfile2, file2)
+
+        with AudioFile(filepath=file) as obj:
+            obj.join(others=file2, newfile=os.path.join(path, "new.wav"))
+            assert not os.path.exists(os.path.join(path, "new.wav"))
+            assert all(os.path.exists(f) for f in (file, file2))
+            obj.join(others=file2, forced=True, newfile=os.path.join(path, "new.wav"))
+            assert os.path.exists(os.path.join(path, "new.wav"))
+            assert all(not os.path.exists(f) for f in (file, file2))
