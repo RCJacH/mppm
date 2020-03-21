@@ -56,7 +56,7 @@ class TestFileList:
             assert set(x.filepath for x in obj) == set(
                 get_audio_path(x + ".wav") for x in audio_files
             )
-
+            assert len(obj[1:3]) == 2
     def test_update_options(self):
         options = {"a": "aa", "b": "bb"}
         with FileList(options=options) as obj:
