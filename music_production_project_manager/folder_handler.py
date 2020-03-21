@@ -1,7 +1,8 @@
 import os
 import shutil
-from music_production_project_manager.audio_file_handler import AudioFile
 
+from music_production_project_manager.audio_file_handler import AudioFile
+from music_production_project_manager.utils import lazy_property
 
 extensions = [".wav", ".wave"]
 """
@@ -58,12 +59,12 @@ def _is_audio_file(file):
 class FileList:
     def __init__(self, folder=None, options=None):
         self._options = options or {
-            "noBackup": False,
-            "backup": {"folder": "bak"},
+            "backup": True,
             "null_threshold": -100,
             "empty_threshold": -100,
         }
         self._files = []
+        self._joinlists = {}
         self._folderpath = ""
         self.folderpath = folder
 
@@ -73,10 +74,26 @@ class FileList:
     def __exit__(self, *args):
         del self
 
-    files = property(lambda self: self._files)
+    def __iter__(self):
+        return iter(self.files)
 
-    fileCount = property(lambda self: len(self.files))
+    def __len__(self):
+        return len(self.files) if self._folderpath != "" else 0
 
+    def __getitem__(self, key):
+        return self.files[key]
+
+    @lazy_property
+    def files(self):
+        self._files = [x for x in self._search_folder(self._folderpath)]
+        return self._files
+
+    @lazy_property
+    def joinlists(self):
+        self._joinlists = self._search_for_join()
+        return self._joinlists
+
+    basenames = property(lambda self: [f.basename for f in self.files])
     filenames = property(lambda self: [f.filename for f in self.files])
 
     filepaths = property(lambda self: [f.filepath for f in self.files])
@@ -100,24 +117,24 @@ class FileList:
         if folder and os.path.exists(folder):
             self._files = []
             self._folderpath = folder
-            for file in self.search_folder(folder):
-                pass
 
     def update_options(self, options={}):
         self._options.update(options)
 
-    def search_folder(self, folder, populate=True, func=None):
-        for f in _iterate_files(folder):
-            af = _create_analysis(f, self._options)
-            if populate:
-                self._files.append(af)
-            yield af
+    def _search_folder(self, folder):
+        return (_create_analysis(f, self._options) for f in _iterate_files(folder))
 
     def proceed(self):
-        if not self.options.pop("noBackup", False):
-            self.backup(**self.options.pop("backup", {}))
-        for file in self._files:
-            file.proceed(options=self.options)
+        if self.options.pop("backup", True):
+            self.backup(**self.options.pop("backup_options", {}))
+        flat_d = [y for x in self.joinlists for y in x]
+        for f in self:
+            options = self.options
+            if f in flat_d:
+                o = self._get_join_options(f)
+                f.action = "J" if o.pop("first") else "N"
+                options.update({"join_options": o})
+            f.proceed(options=options)
         self.folderpath = self.folderpath
 
     def backup(self, folder="bak", newFolder=True, read_only=False):
@@ -138,12 +155,47 @@ class FileList:
             return name
 
         def backup(file):
-            filename, ext = os.path.splitext(file._filename)
-            newfile = unique(folderpath, filename, new=False, ext=ext)
+            newfile = unique(folderpath, file.filename, new=False, ext=file.extension)
             return file.backup(newfile, read_only=read_only)
 
         bakpath, bakfolder = os.path.split(folder)
         path = self.folderpath if (not bakpath or bakpath.isspace) else bakpath
         folderpath = unique(path, bakfolder, new=newFolder)
 
-        return [backup(f) for f in self._files]
+        return [backup(f) for f in self.files]
+
+    def _get_join_options(self, f):
+        base, ch = f.filename.rsplit(self.options.pop("delimiter", "."), 1)
+        l = self.joinlists[base]
+        i = l.index(f.filepath)
+        if i == 0:
+            return {"first": True, "others": l[1:], "newfile": base}
+        else:
+            return {"first": False}
+
+    def _search_for_join(self):
+        if len(self) <= 1:
+            return {}
+
+        d = {}
+        delimiter = self.options.pop("delimiter", ".")
+        for f in self:
+            a = f.filename.rsplit(delimiter, 1)
+            if len(a) == 1:
+                continue
+            base, ch = a
+            ch = "1" if ch == "L" else "2" if ch == "R" else ch
+            flat_d = [y for x in d for y in x]
+            if f in flat_d or not ch.isdigit():
+                continue
+            try:
+                if ch in [v[1] for v in d[base]]:
+                    continue
+            except KeyError:
+                d[base] = list()
+            d[base].append((f, ch))
+        return {
+            k: (x[0] for x in sorted(v, key=lambda y: y[1]))
+            for k, v in d.items()
+            if len(v) > 1
+        }
