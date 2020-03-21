@@ -2,6 +2,7 @@ import os
 import shutil
 import pytest
 from music_production_project_manager.folder_handler import FileList
+from music_production_project_manager.audio_file_handler import AudioFile
 
 
 def get_audio_path(filename=""):
@@ -57,6 +58,7 @@ class TestFileList:
                 get_audio_path(x + ".wav") for x in audio_files
             )
             assert len(obj[1:3]) == 2
+
     def test_update_options(self):
         options = {"a": "aa", "b": "bb"}
         with FileList(options=options) as obj:
@@ -173,3 +175,31 @@ class TestFileList:
                 for k, v in result.items()
             }
 
+    @pytest.mark.parametrize(
+        "lists, filename, result",
+        [
+            pytest.param(
+                {"sin": ["sin.L", "sin.R"]},
+                "sin.L",
+                {"first": True, "others": ["sin.R"], "newfile": "sin"},
+                id="first",
+            ),
+            pytest.param(
+                {"sin": ["sin.L", "sin.R"]}, "sin.R", {"first": False}, id="second"
+            ),
+        ],
+    )
+    def test__get_join_options(self, tmp_path, mocker, lists, filename, result):
+        ext = ".wav"
+        lists = {
+            k: [os.path.join(tmp_path, x + ext) for x in v] for k, v in lists.items()
+        }
+        filepath = os.path.join(tmp_path, filename + ext)
+        if "others" in result:
+            result.update(
+                {"others": [(os.path.join(tmp_path, x + ext)) for x in result["others"]]}
+            )
+        f = AudioFile(filepath, analyze=False)
+        with FileList() as fl:
+            fl.joinlists = mocker.Mock(return_value=lists).return_value
+            assert fl._get_join_options(f) == result
