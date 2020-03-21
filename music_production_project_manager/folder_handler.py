@@ -64,6 +64,7 @@ class FileList:
             "empty_threshold": -100,
         }
         self._files = []
+        self._joinlists = {}
         self._folderpath = ""
         self.folderpath = folder
 
@@ -86,6 +87,11 @@ class FileList:
     def files(self):
         self._files = [x for x in self._search_folder(self._folderpath)]
         return self._files
+
+    @lazy_property
+    def joinlists(self):
+        self._joinlists = self._search_for_join()
+        return self._joinlists
 
     basenames = property(lambda self: [f.basename for f in self.files])
     filenames = property(lambda self: [f.filename for f in self.files])
@@ -121,8 +127,14 @@ class FileList:
     def proceed(self):
         if self.options.pop("backup", True):
             self.backup(**self.options.pop("backup_options", {}))
-        for file in self:
-            file.proceed(options=self.options)
+        flat_d = [y for x in self.joinlists for y in x]
+        for f in self:
+            options = self.options
+            if f in flat_d:
+                o = self._get_join_options(f)
+                f.action = "J" if o.pop("first") else "N"
+                options.update({"join_options": o})
+            f.proceed(options=options)
         self.folderpath = self.folderpath
 
     def backup(self, folder="bak", newFolder=True, read_only=False):
@@ -151,6 +163,15 @@ class FileList:
         folderpath = unique(path, bakfolder, new=newFolder)
 
         return [backup(f) for f in self.files]
+
+    def _get_join_options(self, f):
+        base, ch = f.filename.rsplit(self.options.pop("delimiter", "."), 1)
+        l = self.joinlists[base]
+        i = l.index(f.filepath)
+        if i == 0:
+            return {"first": True, "others": l[1:], "newfile": base}
+        else:
+            return {"first": False}
 
     def _search_for_join(self):
         if len(self) <= 1:
