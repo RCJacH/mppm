@@ -78,7 +78,7 @@ class FileList:
         return iter(self._files)
 
     def __len__(self):
-        return len(self.files) if self.folderpath else 0
+        return len(self.files) if self._folderpath is not "" else 0
 
     def __getitem__(self, key):
         return self.files[key]
@@ -157,11 +157,9 @@ class FileList:
         return [backup(f) for f in self.files]
 
     def _search_for_join(self):
-        def convert_ch_name(s):
-            return "1" if s == "L" else "2" if s == "R" else s
-
         if len(self) <= 1:
             return {}
+
         d = {}
         delimiter = self.options.pop("delimiter", ".")
         for f in self:
@@ -169,7 +167,7 @@ class FileList:
             if len(a) == 1:
                 continue
             base, ch = a
-            ch = convert_ch_name(ch)
+            ch = "1" if ch == "L" else "2" if ch == "R" else ch
             flat_d = [y for x in d for y in x]
             if f in flat_d or not ch.isdigit():
                 continue
@@ -184,4 +182,3 @@ class FileList:
             for k, v in d.items()
             if len(v) > 1
         }
-
