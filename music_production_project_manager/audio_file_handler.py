@@ -2,8 +2,8 @@ import math
 import os
 import shutil
 import re
-import numpy as np
 
+import numpy as np
 from soundfile import SoundFile as sf
 from soundfile import SEEK_END
 
@@ -69,15 +69,21 @@ class AudioFile:
         path, base = os.path.split(self._filepath)
         pathfile, ext = os.path.splitext(self._filepath)
         file = base[: -len(ext)]
-        self._location = [path, base, file, ext, pathfile]
+        self._location = {
+            "pathname": path,
+            "basename": base,
+            "filename": file,
+            "extension": ext,
+            "pathfile": pathfile,
+        }
         return self._location
 
     filepath = property(lambda self: self._filepath)
-    pathname = property(lambda self: self.location[0])
-    basename = property(lambda self: self.location[1])
-    filename = property(lambda self: self.location[2])
-    extension = property(lambda self: self.location[3])
-    pathfile = property(lambda self: self.location[4])
+    pathname = property(lambda self: self.location["pathname"])
+    basename = property(lambda self: self.location["basename"])
+    filename = property(lambda self: self.location["filename"])
+    extension = property(lambda self: self.location["extension"])
+    pathfile = property(lambda self: self.location["pathfile"])
 
     validChannel = property(lambda self: self._validChannel)
 
