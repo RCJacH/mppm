@@ -308,9 +308,7 @@ class TestAudioFile:
         files = [os.path.join(path, x + ext) for x in files]
         for f in files:
             if not f == file:
-                shutil.copyfile(file, f)
-        if file not in files:
-            os.remove(file)
+                shutil.copyfile(testfile, f)
 
         root = files.pop(0)
         with AudioFile(filepath=root) as obj:
