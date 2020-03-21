@@ -155,3 +155,33 @@ class FileList:
         folderpath = unique(path, bakfolder, new=newFolder)
 
         return [backup(f) for f in self.files]
+
+    def _search_for_join(self):
+        def convert_ch_name(s):
+            return "1" if s == "L" else "2" if s == "R" else s
+
+        if len(self) <= 1:
+            return {}
+        d = {}
+        delimiter = self.options.pop("delimiter", ".")
+        for f in self:
+            a = f.filename.rsplit(delimiter, 1)
+            if len(a) == 1:
+                continue
+            base, ch = a
+            ch = convert_ch_name(ch)
+            flat_d = [y for x in d for y in x]
+            if f in flat_d or not ch.isdigit():
+                continue
+            try:
+                if ch in [v[1] for v in d[base]]:
+                    continue
+            except KeyError:
+                d[base] = list()
+            d[base].append((f, ch))
+        return {
+            k: (x[0] for x in sorted(v, key=lambda y: y[1]))
+            for k, v in d.items()
+            if len(v) > 1
+        }
+

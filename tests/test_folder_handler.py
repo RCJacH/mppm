@@ -107,3 +107,68 @@ class TestFileList:
             f = obj.backup(**params)
             assert os.path.exists(bakpath)
             assert set(os.listdir(bakpath)) == set(f + ".wav" for f in audio_files)
+
+    @pytest.mark.parametrize(
+        "files, result",
+        [
+            pytest.param(("sin"), {}, id="single-NoAction"),
+            pytest.param(("san", "sin.L", "tri.L"), {}, id="no-pair"),
+            pytest.param(
+                ("sin.L", "sin.R"), {"sin": ("sin.L", "sin.R")}, id="one-pair"
+            ),
+            pytest.param(
+                ("san", "sin.L", "sin.R", "tri"),
+                {"sin": ("sin.L", "sin.R")},
+                id="one-pair-with-other",
+            ),
+            pytest.param(
+                ("san", "sin.L", "sin.R", "tri.L", "tri.R"),
+                {"sin": ("sin.L", "sin.R"), "tri": ("tri.L", "tri.R")},
+                id="two-pairs-with-other",
+            ),
+            pytest.param(
+                ("san", "sin.L", "sin.R", "tri.L", "tri.R"),
+                {"sin": ("sin.L", "sin.R"), "tri": ("tri.L", "tri.R")},
+                id="two-pairs-with-other",
+            ),
+            pytest.param(
+                ("sin.1", "sin.2", "sin.3"),
+                {"sin": ("sin.1", "sin.2", "sin.3")},
+                id="multichannel",
+            ),
+            pytest.param(("san", "sin.2", "sin.R"), {}, id="ignore-same-channel"),
+            pytest.param(
+                (
+                    "san",
+                    "sin.1",
+                    "sin.2",
+                    "sin.3",
+                    "tri.L",
+                    "tri.R",
+                    "tri.3",
+                    "saw.2",
+                    "saw.R",
+                    "saw",
+                ),
+                {
+                    "sin": ["sin.1", "sin.2", "sin.3"],
+                    "tri": ["tri.L", "tri.R", "tri.3"],
+                },
+                id="mixed",
+            ),
+        ],
+    )
+    def test__search_for_join(self, tmp_path, files, result):
+        filepath = get_audio_path("sin-m.wav")
+        ext = ".wav"
+        files = [os.path.join(tmp_path, x + ext) for x in files]
+        for f in files:
+            shutil.copyfile(filepath, f)
+
+        with FileList(tmp_path) as obj:
+            assert {
+                k: [x.filepath for x in v] for k, v in obj._search_for_join().items()
+            } == {
+                k: [os.path.join(tmp_path, x + ext) for x in v]
+                for k, v in result.items()
+            }
