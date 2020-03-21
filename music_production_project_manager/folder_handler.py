@@ -59,8 +59,7 @@ def _is_audio_file(file):
 class FileList:
     def __init__(self, folder=None, options=None):
         self._options = options or {
-            "noBackup": False,
-            "backup": {"folder": "bak"},
+            "backup": True,
             "null_threshold": -100,
             "empty_threshold": -100,
         }
@@ -75,20 +74,21 @@ class FileList:
         del self
 
     def __iter__(self):
-        return iter(self._files)
+        return iter(self.files)
 
     def __len__(self):
-        return len(self.files) if self._folderpath is not "" else 0
+        return len(self.files) if self._folderpath != "" else 0
 
     def __getitem__(self, key):
         return self.files[key]
 
     @lazy_property
     def files(self):
-        [x for x in self.search_folder(self._folderpath)]
+        self._files = [x for x in self._search_folder(self._folderpath)]
         return self._files
 
     basenames = property(lambda self: [f.basename for f in self.files])
+    filenames = property(lambda self: [f.filename for f in self.files])
 
     filepaths = property(lambda self: [f.filepath for f in self.files])
 
@@ -115,17 +115,13 @@ class FileList:
     def update_options(self, options={}):
         self._options.update(options)
 
-    def search_folder(self, folder, populate=True, func=None):
-        for f in _iterate_files(folder):
-            af = _create_analysis(f, self._options)
-            if populate:
-                self._files.append(af)
-            yield af
+    def _search_folder(self, folder):
+        return (_create_analysis(f, self._options) for f in _iterate_files(folder))
 
     def proceed(self):
-        if not self.options.pop("noBackup", False):
-            self.backup(**self.options.pop("backup", {}))
-        for file in self._files:
+        if self.options.pop("backup", True):
+            self.backup(**self.options.pop("backup_options", {}))
+        for file in self:
             file.proceed(options=self.options)
         self.folderpath = self.folderpath
 
