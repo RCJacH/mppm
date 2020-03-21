@@ -111,7 +111,7 @@ class TestFileList:
     @pytest.mark.parametrize(
         "files, result",
         [
-            pytest.param(("sin"), {}, id="single-NoAction"),
+            pytest.param(["sin"], {}, id="single-NoAction"),
             pytest.param(("san", "sin.L", "tri.L"), {}, id="no-pair"),
             pytest.param(
                 ("sin.L", "sin.R"), {"sin": ("sin.L", "sin.R")}, id="one-pair"
@@ -148,7 +148,7 @@ class TestFileList:
                     "tri.3",
                     "saw.2",
                     "saw.R",
-                    "saw",
+                    "saw.wave",
                 ),
                 {
                     "sin": ["sin.1", "sin.2", "sin.3"],
@@ -172,3 +172,4 @@ class TestFileList:
                 k: [os.path.join(tmp_path, x + ext) for x in v]
                 for k, v in result.items()
             }
+
