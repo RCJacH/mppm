@@ -29,6 +29,7 @@ class AudioFile:
         null_threshold=-100,
         empty_threshold=-100,
         analyze=True,
+        options=None,
     ):
         LOGGER.debug(
             f"Initiating file: {self.__class__.__name__}, with filepath: {filepath}"
@@ -47,6 +48,7 @@ class AudioFile:
         self._action = "D"
         self.null_threshold = 10 ** (null_threshold / 20)
         self.empty_threshold = 10 ** (empty_threshold / 20)
+        self._options = options or {"delimiter": "."}
         if filepath is not None and analyze:
             self.file = filepath
 
@@ -66,24 +68,34 @@ class AudioFile:
 
     @lazy_property
     def location(self):
-        path, base = os.path.split(self._filepath)
-        pathfile, ext = os.path.splitext(self._filepath)
-        file = base[: -len(ext)]
+        dirname, basename = os.path.split(self._filepath)
+        root, ext = os.path.splitext(self._filepath)
+        filename = basename[: -len(ext)]
+        try:
+            filebase, ch = filename.rsplit(self.options.get("delimiter", "."), 1)
+            channelname = "1" if ch == "L" else "2" if ch == "R" else ch
+        except ValueError:
+            filebase = filename
+            channelname = ""
         self._location = {
-            "pathname": path,
-            "basename": base,
-            "filename": file,
+            "dirname": dirname,
+            "basename": basename,
+            "filename": filename,
             "extension": ext,
-            "pathfile": pathfile,
+            "root": root,
+            "filebase": filebase,
+            "channelname": channelname,
         }
         return self._location
 
     filepath = property(lambda self: self._filepath)
-    pathname = property(lambda self: self.location["pathname"])
+    dirname = property(lambda self: self.location["dirname"])
     basename = property(lambda self: self.location["basename"])
     filename = property(lambda self: self.location["filename"])
     extension = property(lambda self: self.location["extension"])
-    pathfile = property(lambda self: self.location["pathfile"])
+    root = property(lambda self: self.location["root"])
+    filebase = property(lambda self: self.location["filebase"])
+    channelname = property(lambda self: self.location["channelname"])
 
     validChannel = property(lambda self: self._validChannel)
 
@@ -124,6 +136,8 @@ class AudioFile:
         and self.countValidChannel > 2
         and not self.isCorrelated
     )
+
+    options = property(lambda self: dict(self._options))
 
     def close(self):
         if self._file:
@@ -264,17 +278,17 @@ class AudioFile:
             self.close()
             os.remove(self._filepath)
 
-    def split(self, delimiter="."):
-        if self.file and self.channels == 2:
-            for i, ch in enumerate(["L", "R"]):
+    def split(self, delimiter=".", remove=True):
+        if self.file and self.channels > 1:
+            channelnames = ("L", "R") if self.channels == 2 else range(self.channels)
+            for i, ch in enumerate(channelnames):
                 self.file.seek(0)
                 data = self.file.read()[i]
                 st = self.file.subtype
                 ed = self.file.endian
                 fm = self.file.format
-                print(self.pathfile + delimiter + ch + self.extension)
                 with sf(
-                    self.pathfile + delimiter + ch + self.extension,
+                    self.root + delimiter + ch + self.extension,
                     "w",
                     self._samplerate,
                     1,
@@ -284,10 +298,11 @@ class AudioFile:
                     True,
                 ) as f:
                     f.write(data)
-            self.remove(forced=True)
+            if remove:
+                self.remove(forced=True)
 
     def join_old(self, other=None, remove=True):
-        s = re.match(r"(.+)([^\a])([lL]|[rR])$", self.pathfile)
+        s = re.match(r"(.+)([^\a])([lL]|[rR])$", self.root)
         if s:
             base, delimiter, ch = s.groups()
             chs = ["L", "R"]
@@ -335,7 +350,7 @@ class AudioFile:
 
         pos = len(others) // 10 + 2
         newfile = (
-            (self.pathfile[-pos] == delimiter and self.pathfile[:-pos] + self.extension)
+            (self.root[-pos] == delimiter and self.root[:-pos] + self.extension)
             if (not newfile and delimiter)
             else newfile
             if newfile

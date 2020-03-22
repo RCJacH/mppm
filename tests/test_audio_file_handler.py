@@ -102,18 +102,29 @@ class TestAudioFile:
         with AudioFile(get_audio_path("empty"), analyze=False) as obj:
             assert obj.file
 
-    def test_file_names(self):
-        filepath = get_audio_path("empty")
-        pathname, basename = os.path.split(filepath)
-        filename = "empty"
-        extension = ".wav"
-        with AudioFile(filepath) as obj:
+    @pytest.mark.parametrize(
+        "filename, othernames",
+        [
+            pytest.param("sin", [".wav", "sin", ""], id="NoDot"),
+            pytest.param("sin.R", [".wav", "sin", "2"], id="OneDot"),
+            pytest.param("sin.wave.R", [".wav", "sin.wave", "2"], id="MultiDots"),
+        ]
+    )
+    def test_file_names(self, filename, othernames):
+        filepath = get_audio_path(filename)
+        dirname, basename = os.path.split(filepath)
+        extension = othernames[0]
+        filebase = othernames[1]
+        channelname = othernames[2]
+        with AudioFile(filepath, analyze=False) as obj:
             assert obj.filepath == filepath
-            assert obj.pathname == pathname
+            assert obj.dirname == dirname
             assert obj.basename == basename
             assert obj.filename == filename
             assert obj.extension == extension
-            assert obj.pathfile == filepath[:-4]
+            assert obj.root == filepath[:-4]
+            assert obj.filebase == filebase
+            assert obj.channelname == channelname
 
     def test__eq__(self):
         filepath = get_audio_path("empty")

@@ -60,11 +60,13 @@ class FileList:
     def __init__(self, folder=None, options=None):
         self._options = options or {
             "backup": True,
+            "delimiter": ".",
             "null_threshold": -100,
             "empty_threshold": -100,
         }
         self._files = []
-        self._joinlists = {}
+        self._joinlists = None
+        self._flat_joinlists = None
         self._folderpath = ""
         self.folderpath = folder
 
@@ -92,6 +94,11 @@ class FileList:
     def joinlists(self):
         self._joinlists = self._search_for_join()
         return self._joinlists
+
+    @lazy_property
+    def flat_joinlists(self):
+        self._flat_joinlist = [y for x in self.joinlists for y in x]
+        return self._flat_joinlist
 
     basenames = property(lambda self: [f.basename for f in self.files])
     filenames = property(lambda self: [f.filename for f in self.files])
@@ -127,10 +134,9 @@ class FileList:
     def proceed(self):
         if self.options.pop("backup", True):
             self.backup(**self.options.pop("backup_options", {}))
-        flat_d = [y for x in self.joinlists for y in x]
         for f in self:
             options = self.options
-            if f in flat_d:
+            if f in self.flat_joinlists:
                 o = self._get_join_options(f)
                 f.action = "J" if o.pop("first") else "N"
                 options.update({"join_options": o})
