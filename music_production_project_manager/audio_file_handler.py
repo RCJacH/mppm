@@ -61,6 +61,46 @@ class AudioFile:
     def __eq__(self, other):
         return isinstance(other, AudioFile) and self._filepath == other._filepath
 
+    @property
+    def file(self):
+        return self._file
+
+    @file.setter
+    def file(self, file):
+        try:
+            self._file = sf(file)
+            self._channels = self._file.channels
+            self._samplerate = self._file.samplerate
+            if not self.blocksize:
+                self.blocksize = self._file.frames
+            self.analyze()
+            self._file.seek(0)
+        except RuntimeError:
+            self.close()
+
+    @property
+    def action(self):
+        return {
+            "D": "Default",
+            "M": "Monoize",
+            "R": "Remove",
+            "S": "Split",
+            "J": "Join",
+            "N": "None",
+        }[self._action]
+
+    @action.setter
+    def action(self, v):
+        if v in "DMRSJN" or v.lower() in (
+            "default",
+            "monoize",
+            "remove",
+            "split",
+            "join",
+            "none",
+        ):
+            self._action = v
+
     @lazy_property
     def location(self):
         dirname, basename = os.path.split(self._filepath)
@@ -105,6 +145,7 @@ class AudioFile:
     )
     delimiter = property(lambda self: self.options.get("delimiter", "."))
 
+
     validChannel = property(lambda self: self._validChannel)
 
     countValidChannel = property(lambda self: bin(self.validChannel).count("1"))
@@ -113,15 +154,16 @@ class AudioFile:
         lambda self: self._file.channels if self._file else self._channels
     )
 
-    flag = property(lambda self: self._flag)
-
     frames = property(lambda self: self._file.frames)
+
+    flag = property(lambda self: self._flag)
 
     isCorrelated = property(lambda self: self._isCorrelated)
 
     sample = property(lambda self: self._sample)
 
     samplerate = property(lambda self: self._samplerate)
+
 
     isEmpty = property(lambda self: self.validChannel == 0 or self.channels == 0)
 
@@ -157,46 +199,6 @@ class AudioFile:
         if self._file:
             yield self._file.read(*args, **kwargs)
             self._file.seek(0)
-
-    @property
-    def file(self):
-        return self._file
-
-    @file.setter
-    def file(self, file):
-        try:
-            self._file = sf(file)
-            self._channels = self._file.channels
-            self._samplerate = self._file.samplerate
-            if not self.blocksize:
-                self.blocksize = self._samplerate
-            self.analyze()
-            self._file.seek(0)
-        except RuntimeError:
-            self.close()
-
-    @property
-    def action(self):
-        return {
-            "D": "Default",
-            "M": "Monoize",
-            "R": "Remove",
-            "S": "Split",
-            "J": "Join",
-            "N": "None",
-        }[self._action]
-
-    @action.setter
-    def action(self, v):
-        if v in "DMRSJN" or v.lower() in (
-            "default",
-            "monoize",
-            "remove",
-            "split",
-            "join",
-            "none",
-        ):
-            self._action = v
 
     def analyze(self):
         if self.file:
