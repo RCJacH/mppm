@@ -165,7 +165,14 @@ class AudioFile:
 
     @action.setter
     def action(self, v):
-        if v in "DMRSJN":
+        if v in "DMRSJN" or v.lower() in (
+            "default",
+            "monoize",
+            "remove",
+            "split",
+            "join",
+            "none",
+        ):
             self._action = v
 
     def analyze(self):
