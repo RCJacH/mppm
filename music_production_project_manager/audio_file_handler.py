@@ -20,15 +20,13 @@ import logging
 LOGGER = logging.getLogger(__name__)
 
 
+def _dB_to_float(v):
+    return 10 ** (v / 20)
+
+
 class AudioFile:
     def __init__(
-        self,
-        filepath=None,
-        blocksize=None,
-        debug=False,
-        null_threshold=-100,
-        empty_threshold=-100,
-        analyze=True,
+        self, filepath=None, blocksize=None, analyze=True, options=None,
     ):
         LOGGER.debug(
             f"Initiating file: {self.__class__.__name__}, with filepath: {filepath}"
@@ -39,14 +37,13 @@ class AudioFile:
         self.blocksize = None if str(blocksize) == "None" else int(blocksize)
         self._channels = None
         self._validChannel = 0
-        self._debug = debug
         self._flag = None
         self._isCorrelated = None
         self._sample = None
         self._samplerate = None
-        self._action = "D"
-        self.null_threshold = 10 ** (null_threshold / 20)
-        self.empty_threshold = 10 ** (empty_threshold / 20)
+        self._action = "N"
+        self._options = options or {"delimiter": "."}
+        self.join_files = []
         if filepath is not None and analyze:
             self.file = filepath
 
@@ -66,24 +63,47 @@ class AudioFile:
 
     @lazy_property
     def location(self):
-        path, base = os.path.split(self._filepath)
-        pathfile, ext = os.path.splitext(self._filepath)
-        file = base[: -len(ext)]
+        dirname, basename = os.path.split(self._filepath)
+        root, ext = os.path.splitext(self._filepath)
+        filename = basename[: -len(ext)]
+        try:
+            filebase, ch = filename.rsplit(self.delimiter, 1)
+            ch = "1" if ch == "L" else "2" if ch == "R" else ch
+            if ch.isdigit():
+                channelnum = ch
+            else:
+                raise ValueError
+        except ValueError:
+            filebase = filename
+            channelnum = ""
         self._location = {
-            "pathname": path,
-            "basename": base,
-            "filename": file,
+            "dirname": dirname,
+            "basename": basename,
+            "filename": filename,
             "extension": ext,
-            "pathfile": pathfile,
+            "root": root,
+            "filebase": filebase,
+            "channelnum": channelnum,
         }
         return self._location
 
     filepath = property(lambda self: self._filepath)
-    pathname = property(lambda self: self.location["pathname"])
+    dirname = property(lambda self: self.location["dirname"])
     basename = property(lambda self: self.location["basename"])
     filename = property(lambda self: self.location["filename"])
     extension = property(lambda self: self.location["extension"])
-    pathfile = property(lambda self: self.location["pathfile"])
+    root = property(lambda self: self.location["root"])
+    filebase = property(lambda self: self.location["filebase"])
+    channelnum = property(lambda self: self.location["channelnum"])
+
+    options = property(lambda self: dict(self._options))
+    null_threshold = property(
+        lambda self: _dB_to_float(self.options.get("null_threshold", -100))
+    )
+    empty_threshold = property(
+        lambda self: _dB_to_float(self.options.get("empty_threshold", -100))
+    )
+    delimiter = property(lambda self: self.options.get("delimiter", "."))
 
     validChannel = property(lambda self: self._validChannel)
 
@@ -124,6 +144,9 @@ class AudioFile:
         and self.countValidChannel > 2
         and not self.isCorrelated
     )
+
+    def update_options(self, options):
+        self._options.update(options)
 
     def close(self):
         if self._file:
@@ -213,29 +236,29 @@ class AudioFile:
         return info
 
     def default_action(self, options={}):
-        m = options.pop("monoize", True)
-        r = options.pop("remove", True)
-        j = options.pop("join", True)
+        m = options.get("monoize", True)
+        r = options.get("remove", True)
+        j = options.get("join", True)
         if self.isEmpty and r:
             return "R"
         if self.isFakeStereo and m:
             return "M"
-        if options.pop("join_file", False) and j:
+        if self.join_files and j:
             return "J"
         return "N"
 
     def proceed(self, options={}):
-        if options.pop("read_only", False):
+        if options.get("read_only", False):
             return self.action
 
         if self._action == "M":
-            return self.monoize(**options.pop("monoize_options", {}))
+            return self.monoize(**options.get("monoize_options", {}))
         if self._action == "R":
             return self.remove(forced=True)
         if self._action == "S":
-            return self.split(**options.pop("split_options", {}))
+            return self.split(**options.get("split_options", {}))
         if self._action == "J":
-            return self.join(**options.pop("join_options", {}))
+            return self.join(**options.get("join_options", {}))
 
     def backup(self, filepath, read_only=False):
         try:
@@ -264,17 +287,17 @@ class AudioFile:
             self.close()
             os.remove(self._filepath)
 
-    def split(self, delimiter="."):
-        if self.file and self.channels == 2:
-            for i, ch in enumerate(["L", "R"]):
+    def split(self, remove=True):
+        if self.file and self.channels > 1:
+            channelnums = ("L", "R") if self.channels == 2 else range(self.channels)
+            for i, ch in enumerate(channelnums):
                 self.file.seek(0)
                 data = self.file.read()[i]
                 st = self.file.subtype
                 ed = self.file.endian
                 fm = self.file.format
-                print(self.pathfile + delimiter + ch + self.extension)
                 with sf(
-                    self.pathfile + delimiter + ch + self.extension,
+                    self.root + self.delimiter + ch + self.extension,
                     "w",
                     self._samplerate,
                     1,
@@ -284,10 +307,11 @@ class AudioFile:
                     True,
                 ) as f:
                     f.write(data)
-            self.remove(forced=True)
+            if remove:
+                self.remove(forced=True)
 
     def join_old(self, other=None, remove=True):
-        s = re.match(r"(.+)([^\a])([lL]|[rR])$", self.pathfile)
+        s = re.match(r"(.+)([^\a])([lL]|[rR])$", self.root)
         if s:
             base, delimiter, ch = s.groups()
             chs = ["L", "R"]
@@ -315,7 +339,7 @@ class AudioFile:
                 self.close()
                 os.remove(self._filepath)
 
-    def join(self, others=None, remove=True, forced=False, newfile=None, delimiter="."):
+    def join(self, others=None, remove=True, forced=False, newfile=None):
         if not others:
             return
 
@@ -335,8 +359,8 @@ class AudioFile:
 
         pos = len(others) // 10 + 2
         newfile = (
-            (self.pathfile[-pos] == delimiter and self.pathfile[:-pos] + self.extension)
-            if (not newfile and delimiter)
+            (self.root[-pos] == self.delimiter and self.root[:-pos] + self.extension)
+            if (not newfile and self.delimiter)
             else newfile
             if newfile
             else self.filepath

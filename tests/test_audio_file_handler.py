@@ -102,18 +102,30 @@ class TestAudioFile:
         with AudioFile(get_audio_path("empty"), analyze=False) as obj:
             assert obj.file
 
-    def test_file_names(self):
-        filepath = get_audio_path("empty")
-        pathname, basename = os.path.split(filepath)
-        filename = "empty"
-        extension = ".wav"
-        with AudioFile(filepath) as obj:
+    @pytest.mark.parametrize(
+        "filename, othernames",
+        [
+            pytest.param("sin", [".wav", "sin", ""], id="NoDot"),
+            pytest.param("sin.R", [".wav", "sin", "2"], id="OneDot"),
+            pytest.param("sin.wave.R", [".wav", "sin.wave", "2"], id="MultiDots"),
+            pytest.param("sin.wave", [".wav", "sin.wave", ""], id="InvalidDot"),
+        ]
+    )
+    def test_file_names(self, filename, othernames):
+        filepath = get_audio_path(filename)
+        dirname, basename = os.path.split(filepath)
+        extension = othernames[0]
+        filebase = othernames[1]
+        channelnum = othernames[2]
+        with AudioFile(filepath, analyze=False) as obj:
             assert obj.filepath == filepath
-            assert obj.pathname == pathname
+            assert obj.dirname == dirname
             assert obj.basename == basename
             assert obj.filename == filename
             assert obj.extension == extension
-            assert obj.pathfile == filepath[:-4]
+            assert obj.root == filepath[:-4]
+            assert obj.filebase == filebase
+            assert obj.channelnum == channelnum
 
     def test__eq__(self):
         filepath = get_audio_path("empty")
@@ -155,12 +167,13 @@ class TestAudioFile:
             ("0-s", {"remove": False}, "N"),
             ("sin-s", {}, "M"),
             ("sin-s", {"monoize": False}, "N"),
-            ("sin.L", {"join_file": True}, "J"),
+            ("sin.L", {"join_files": ["1"]}, "J"),
             ("sin.L", {"join": False, "join_file": True}, "N"),
         ]
     )
     def test_analyze_actions(self, file, options, result):
         with AudioFile(get_audio_path(file)) as af:
+            af.join_files = options.pop("join_files", [])
             assert af.default_action(options) == result
 
     @pytest.mark.parametrize(
@@ -170,7 +183,7 @@ class TestAudioFile:
             ({"action": "R"}, "remove"),
             ({"action": "S"}, "split"),
             ({"action": "J"}, "join"),
-            ({"action": "S", "split_options": {"delimiter": "-"}}, "split"),
+            ({"action": "S", "delimiter": "-"}, "split"),
         ],
     )
     def test_proceed(self, mocker, options, func):
@@ -178,6 +191,8 @@ class TestAudioFile:
             setattr(obj, func, mocker.Mock())
             if "action" in options:
                 obj.action = options.pop("action")
+            if "delimiter" in options:
+                obj.update_options({"delimiter": options.pop("delimiter")})
             obj.proceed(options=options)
             if not options:
                 getattr(obj, func).assert_called()
@@ -186,7 +201,7 @@ class TestAudioFile:
 
     def test_proceed_read_only(self, mocker):
         with AudioFile("empty") as obj:
-            assert obj.proceed(options={"read_only": True}) == "Default"
+            assert obj.proceed(options={"read_only": True}) == "None"
             obj.action = "M"
             obj.monoize = mocker.Mock()
             assert obj.proceed(options={"read_only": True}) == "Monoize"
@@ -297,6 +312,7 @@ class TestAudioFile:
             ),
             pytest.param(["sin-m.L", "sin-m.R"], {"newfile": "sin.wav"}, "sin.wav", False, id="newfile"),
             pytest.param(["sin-m.L", "sin-m.R"], {"remove": False}, "sin-m.wav", True, id="noRemove"),
+            pytest.param(["sin-m_L", "sin-m_R"], {"delimiter": "_"}, "sin-m.wav", False, id="delimiter"),
             pytest.param(["sin-m.L", "sin-m.R"], {"string": True}, "sin-m.wav", False, id="othersAsString"),
             pytest.param(["sin-m.L", "sin-m.R"], {"error": FileNotFoundError}, "sin-m.wav", False, id="Nofile"),
             pytest.param(["sin-m.1", "sin-m.2", 'sin-m.3'], {}, "sin-m.wav", False, id="multichannel"),
@@ -320,6 +336,7 @@ class TestAudioFile:
 
         root = files.pop(0)
         with AudioFile(filepath=root) as obj:
+            obj.update_options({"delimiter": delimiter})
             if error is not None:
                 with pytest.raises(error) as e:
                     obj.join(others=files[0][0:-2], **params)

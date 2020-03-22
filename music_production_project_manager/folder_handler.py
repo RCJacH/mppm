@@ -40,11 +40,7 @@ def _iterate_files(folder):
 
 
 def _create_analysis(filepath, options):
-    return AudioFile(
-        filepath,
-        null_threshold=options["null_threshold"],
-        empty_threshold=options["empty_threshold"],
-    )
+    return AudioFile(filepath, options=options)
 
 
 def _list_audio_files(folder):
@@ -60,11 +56,12 @@ class FileList:
     def __init__(self, folder=None, options=None):
         self._options = options or {
             "backup": True,
-            "null_threshold": -100,
-            "empty_threshold": -100,
+            "backup_folder": "bak",
+            "delimiter": ".",
         }
         self._files = []
-        self._joinlists = {}
+        self._joinlists = None
+        self._flat_joinlists = None
         self._folderpath = ""
         self.folderpath = folder
 
@@ -93,18 +90,23 @@ class FileList:
         self._joinlists = self._search_for_join()
         return self._joinlists
 
-    basenames = property(lambda self: [f.basename for f in self.files])
-    filenames = property(lambda self: [f.filename for f in self.files])
+    @lazy_property
+    def flat_joinlists(self):
+        self._flat_joinlist = [y for x in self.joinlists.values() for y in x]
+        return self._flat_joinlist
 
-    filepaths = property(lambda self: [f.filepath for f in self.files])
+    basenames = property(lambda self: [f.basename for f in self])
+    filenames = property(lambda self: [f.filename for f in self])
 
-    empty_files = property(lambda self: [f for f in self.files if f.isEmpty])
+    filepaths = property(lambda self: [f.filepath for f in self])
 
-    fake_stereo_files = property(lambda self: [f for f in self.files if f.isFakeStereo])
+    empty_files = property(lambda self: [f for f in self if f.isEmpty])
 
-    multichannel_files = property(
-        lambda self: [f for f in self.files if f.isMultichannel]
-    )
+    fake_stereo_files = property(lambda self: [f for f in self if f.isFakeStereo])
+
+    multichannel_files = property(lambda self: [f for f in self if f.isMultichannel])
+
+    actions = property(lambda self: [f.action for f in self])
 
     options = property(lambda self: dict(self._options))
 
@@ -118,19 +120,27 @@ class FileList:
             self._files = []
             self._folderpath = folder
 
-    def update_options(self, options={}):
+    def update_options(self, options):
         self._options.update(options)
 
     def _search_folder(self, folder):
         return (_create_analysis(f, self._options) for f in _iterate_files(folder))
 
+    def set_default_action(self):
+        for f in self:
+            if f in self.flat_joinlists:
+                o = self._get_join_options(f)
+                f.action = "J" if o.pop("first") else "R"
+                f.join_files = o.pop("others", [])
+            else:
+                f.action = f.default_action(self.options)
+
     def proceed(self):
         if self.options.pop("backup", True):
             self.backup(**self.options.pop("backup_options", {}))
-        flat_d = [y for x in self.joinlists for y in x]
         for f in self:
             options = self.options
-            if f in flat_d:
+            if f in self.flat_joinlists:
                 o = self._get_join_options(f)
                 f.action = "J" if o.pop("first") else "N"
                 options.update({"join_options": o})
@@ -162,13 +172,12 @@ class FileList:
         path = self.folderpath if (not bakpath or bakpath.isspace) else bakpath
         folderpath = unique(path, bakfolder, new=newFolder)
 
-        return [backup(f) for f in self.files]
+        return [backup(f) for f in self]
 
     def _get_join_options(self, f):
-        base, ch = f.filename.rsplit(self.options.pop("delimiter", "."), 1)
+        base = f.filebase
         l = self.joinlists[base]
-        i = l.index(f.filepath)
-        if i == 0:
+        if not l.index(f):
             return {"first": True, "others": l[1:], "newfile": base}
         else:
             return {"first": False}
@@ -178,16 +187,14 @@ class FileList:
             return {}
 
         d = {}
-        delimiter = self.options.pop("delimiter", ".")
         for f in self:
-            a = f.filename.rsplit(delimiter, 1)
-            if len(a) == 1:
+            if not f.channelnum:
                 continue
-            base, ch = a
-            ch = "1" if ch == "L" else "2" if ch == "R" else ch
             flat_d = [y for x in d for y in x]
-            if f in flat_d or not ch.isdigit():
+            if f in flat_d:
                 continue
+            base = f.filebase
+            ch = f.channelnum
             try:
                 if ch in [v[1] for v in d[base]]:
                     continue
@@ -195,7 +202,7 @@ class FileList:
                 d[base] = list()
             d[base].append((f, ch))
         return {
-            k: (x[0] for x in sorted(v, key=lambda y: y[1]))
+            k: [x[0] for x in sorted(v, key=lambda y: y[1])]
             for k, v in d.items()
             if len(v) > 1
         }
