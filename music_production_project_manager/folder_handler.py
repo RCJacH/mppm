@@ -40,11 +40,7 @@ def _iterate_files(folder):
 
 
 def _create_analysis(filepath, options):
-    return AudioFile(
-        filepath,
-        null_threshold=options["null_threshold"],
-        empty_threshold=options["empty_threshold"],
-    )
+    return AudioFile(filepath, options=options)
 
 
 def _list_audio_files(folder):

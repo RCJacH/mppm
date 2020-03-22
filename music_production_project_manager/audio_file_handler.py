@@ -20,16 +20,13 @@ import logging
 LOGGER = logging.getLogger(__name__)
 
 
+def _dB_to_float(v):
+    return 10 ** (v / 20)
+
+
 class AudioFile:
     def __init__(
-        self,
-        filepath=None,
-        blocksize=None,
-        debug=False,
-        null_threshold=-100,
-        empty_threshold=-100,
-        analyze=True,
-        options=None,
+        self, filepath=None, blocksize=None, analyze=True, options=None,
     ):
         LOGGER.debug(
             f"Initiating file: {self.__class__.__name__}, with filepath: {filepath}"
@@ -40,14 +37,11 @@ class AudioFile:
         self.blocksize = None if str(blocksize) == "None" else int(blocksize)
         self._channels = None
         self._validChannel = 0
-        self._debug = debug
         self._flag = None
         self._isCorrelated = None
         self._sample = None
         self._samplerate = None
-        self._action = "D"
-        self.null_threshold = 10 ** (null_threshold / 20)
-        self.empty_threshold = 10 ** (empty_threshold / 20)
+        self._action = "N"
         self._options = options or {"delimiter": "."}
         if filepath is not None and analyze:
             self.file = filepath
@@ -101,6 +95,14 @@ class AudioFile:
     filebase = property(lambda self: self.location["filebase"])
     channelnum = property(lambda self: self.location["channelnum"])
 
+    options = property(lambda self: dict(self._options))
+    null_threshold = property(
+        lambda self: _dB_to_float(self.options.get("null_threshold", -100))
+    )
+    empty_threshold = property(
+        lambda self: _dB_to_float(self.options.get("empty_threshold", -100))
+    )
+
     validChannel = property(lambda self: self._validChannel)
 
     countValidChannel = property(lambda self: bin(self.validChannel).count("1"))
@@ -140,8 +142,6 @@ class AudioFile:
         and self.countValidChannel > 2
         and not self.isCorrelated
     )
-
-    options = property(lambda self: dict(self._options))
 
     def close(self):
         if self._file:

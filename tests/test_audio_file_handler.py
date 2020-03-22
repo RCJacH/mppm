@@ -198,7 +198,7 @@ class TestAudioFile:
 
     def test_proceed_read_only(self, mocker):
         with AudioFile("empty") as obj:
-            assert obj.proceed(options={"read_only": True}) == "Default"
+            assert obj.proceed(options={"read_only": True}) == "None"
             obj.action = "M"
             obj.monoize = mocker.Mock()
             assert obj.proceed(options={"read_only": True}) == "Monoize"
