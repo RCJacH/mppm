@@ -171,7 +171,7 @@ class FileList:
         return [backup(f) for f in self.files]
 
     def _get_join_options(self, f):
-        base, ch = f.filename.rsplit(self.options.pop("delimiter", "."), 1)
+        base = f.filebase
         l = self.joinlists[base]
         i = l.index(f.filepath)
         if i == 0:
