@@ -66,7 +66,7 @@ class AudioFile:
         root, ext = os.path.splitext(self._filepath)
         filename = basename[: -len(ext)]
         try:
-            filebase, ch = filename.rsplit(self.options.get("delimiter", "."), 1)
+            filebase, ch = filename.rsplit(self.delimiter, 1)
             ch = "1" if ch == "L" else "2" if ch == "R" else ch
             if ch.isdigit():
                 channelnum = ch
@@ -102,6 +102,7 @@ class AudioFile:
     empty_threshold = property(
         lambda self: _dB_to_float(self.options.get("empty_threshold", -100))
     )
+    delimiter = property(lambda self: self.options.get("delimiter", "."))
 
     validChannel = property(lambda self: self._validChannel)
 
@@ -142,6 +143,9 @@ class AudioFile:
         and self.countValidChannel > 2
         and not self.isCorrelated
     )
+
+    def update_options(self, options):
+        self._options.update(options)
 
     def close(self):
         if self._file:
@@ -231,29 +235,29 @@ class AudioFile:
         return info
 
     def default_action(self, options={}):
-        m = options.pop("monoize", True)
-        r = options.pop("remove", True)
-        j = options.pop("join", True)
+        m = options.get("monoize", True)
+        r = options.get("remove", True)
+        j = options.get("join", True)
         if self.isEmpty and r:
             return "R"
         if self.isFakeStereo and m:
             return "M"
-        if options.pop("join_file", False) and j:
+        if options.get("join_file", False) and j:
             return "J"
         return "N"
 
     def proceed(self, options={}):
-        if options.pop("read_only", False):
+        if options.get("read_only", False):
             return self.action
 
         if self._action == "M":
-            return self.monoize(**options.pop("monoize_options", {}))
+            return self.monoize(**options.get("monoize_options", {}))
         if self._action == "R":
             return self.remove(forced=True)
         if self._action == "S":
-            return self.split(**options.pop("split_options", {}))
+            return self.split(**options.get("split_options", {}))
         if self._action == "J":
-            return self.join(**options.pop("join_options", {}))
+            return self.join(**options.get("join_options", {}))
 
     def backup(self, filepath, read_only=False):
         try:
@@ -282,7 +286,7 @@ class AudioFile:
             self.close()
             os.remove(self._filepath)
 
-    def split(self, delimiter=".", remove=True):
+    def split(self, remove=True):
         if self.file and self.channels > 1:
             channelnums = ("L", "R") if self.channels == 2 else range(self.channels)
             for i, ch in enumerate(channelnums):
@@ -292,7 +296,7 @@ class AudioFile:
                 ed = self.file.endian
                 fm = self.file.format
                 with sf(
-                    self.root + delimiter + ch + self.extension,
+                    self.root + self.delimiter + ch + self.extension,
                     "w",
                     self._samplerate,
                     1,
@@ -334,7 +338,7 @@ class AudioFile:
                 self.close()
                 os.remove(self._filepath)
 
-    def join(self, others=None, remove=True, forced=False, newfile=None, delimiter="."):
+    def join(self, others=None, remove=True, forced=False, newfile=None):
         if not others:
             return
 
@@ -354,8 +358,8 @@ class AudioFile:
 
         pos = len(others) // 10 + 2
         newfile = (
-            (self.root[-pos] == delimiter and self.root[:-pos] + self.extension)
-            if (not newfile and delimiter)
+            (self.root[-pos] == self.delimiter and self.root[:-pos] + self.extension)
+            if (not newfile and self.delimiter)
             else newfile
             if newfile
             else self.filepath
