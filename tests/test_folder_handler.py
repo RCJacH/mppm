@@ -50,6 +50,12 @@ class TestFileList:
                 else:
                     assert getattr(obj, item) == result[item]
 
+    def test__init__late_start(self):
+        with FileList() as fl:
+            assert len(fl) == 0
+            fl.folderpath = get_audio_path()
+            assert len(fl) == len(os.listdir(get_audio_path())) - 1
+
     def test_folderpath(self):
         with FileList() as obj:
             assert len(obj) == 0
@@ -194,14 +200,37 @@ class TestFileList:
     def test__get_join_options(self, tmp_path, mocker, lists, filename, result):
         ext = ".wav"
         lists = {
-            k: [os.path.join(tmp_path, x + ext) for x in v] for k, v in lists.items()
+            k: [AudioFile(os.path.join(tmp_path, x + ext)) for x in v] for k, v in lists.items()
         }
         filepath = os.path.join(tmp_path, filename + ext)
         if "others" in result:
             result.update(
-                {"others": [(os.path.join(tmp_path, x + ext)) for x in result["others"]]}
+                {
+                    "others": [
+                        AudioFile(os.path.join(tmp_path, x + ext)) for x in result["others"]
+                    ]
+                }
             )
         f = AudioFile(filepath, analyze=False)
         with FileList() as fl:
             fl.joinlists = mocker.Mock(return_value=lists).return_value
             assert fl._get_join_options(f) == result
+
+    def test_set_default_action(self):
+        with FileList(get_audio_path()) as fl:
+            fl.set_default_action()
+            print(fl.filenames)
+            assert fl.actions == [
+                "Remove",
+                "Remove",
+                "Remove",
+                "None",
+                "Monoize",
+                "None",
+                "Monoize",
+                "Monoize",
+                "Monoize",
+                "Join",
+                "Remove",
+            ]
+

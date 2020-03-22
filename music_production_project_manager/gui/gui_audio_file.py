@@ -37,7 +37,7 @@ class FolderBrowser:
         self.keepRemove = tk.BooleanVar()
         self.keepRemove.set(True)
         self.backupPath = tk.StringVar()
-        self.backupPath.set(self._FileList.options["backup"]["folder"])
+        self.backupPath.set(self._FileList.options["backup_folder"])
 
         self.current_stage = tk.IntVar()
         self.analyzed = tk.BooleanVar()
@@ -231,8 +231,8 @@ class FolderBrowser:
         def check(v):
             return "x" if v else ""
 
-        def select(v):
-            return v
+        def select(f):
+            return f.action
 
         if not os.path.exists(self.path.get()):
             self.stage(0)
@@ -244,9 +244,11 @@ class FolderBrowser:
             "empty_threshold": self.empty_threshold.get(),
             "blocksize": self.blocksize.get(),
         }
+        self._FileList.folderpath = self.path.get()
         self._FileList.update_options(options)
+        self._FileList.set_default_action()
         self.file_tree.delete(*self.file_tree.get_children())
-        for file in self._FileList.search_folder(self.path.get()):
+        for file in self._FileList:
             self.file_tree.insert(
                 "",
                 "end",
@@ -258,7 +260,7 @@ class FolderBrowser:
                     check(file.isFakeStereo),
                     check(file.isStereo),
                     check(file.isMultichannel),
-                    select(file.action),
+                    select(file),
                 ],
             )
         self.analyzed.set(True)
