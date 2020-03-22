@@ -56,6 +56,7 @@ class FileList:
     def __init__(self, folder=None, options=None):
         self._options = options or {
             "backup": True,
+            "backup_folder": "bak",
             "delimiter": ".",
         }
         self._files = []

@@ -50,6 +50,12 @@ class TestFileList:
                 else:
                     assert getattr(obj, item) == result[item]
 
+    def test__init__late_start(self):
+        with FileList() as fl:
+            assert len(fl) == 0
+            fl.folderpath = get_audio_path()
+            assert len(fl) == len(os.listdir(get_audio_path())) - 1
+
     def test_folderpath(self):
         with FileList() as obj:
             assert len(obj) == 0
