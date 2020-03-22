@@ -184,16 +184,14 @@ class FileList:
             return {}
 
         d = {}
-        delimiter = self.options.pop("delimiter", ".")
         for f in self:
-            a = f.filename.rsplit(delimiter, 1)
-            if len(a) == 1:
+            if not f.channelnum:
                 continue
-            base, ch = a
-            ch = "1" if ch == "L" else "2" if ch == "R" else ch
             flat_d = [y for x in d for y in x]
-            if f in flat_d or not ch.isdigit():
+            if f in flat_d:
                 continue
+            base = f.filebase
+            ch = f.channelnum
             try:
                 if ch in [v[1] for v in d[base]]:
                     continue
