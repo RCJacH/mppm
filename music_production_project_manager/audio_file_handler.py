@@ -224,28 +224,17 @@ class AudioFile:
             return "J"
         return "N"
 
-    # TODO: Remove default and Keep only other methods
     def proceed(self, options={}):
         if options.pop("read_only", False):
             return self.action
 
-        m = options.pop("monoize", True)
-        r = options.pop("remove", True)
-        j = options.pop("join", True)
-        delimiter = options.pop("delimiter", ".")
-
-        if self._action == "D":
-            if self.isEmpty and r:
-                return self.remove(**options.pop("remove_options", {}))
-            if self.isFakeStereo and m:
-                return self.monoize(**options.pop("monoize_options", {}))
-        if self._action == "M" and m:
+        if self._action == "M":
             return self.monoize(**options.pop("monoize_options", {}))
-        if self._action == "R" and r:
+        if self._action == "R":
             return self.remove(forced=True)
         if self._action == "S":
             return self.split(**options.pop("split_options", {}))
-        if self._action == "J" and j:
+        if self._action == "J":
             return self.join(**options.pop("join_options", {}))
 
     def backup(self, filepath, read_only=False):
