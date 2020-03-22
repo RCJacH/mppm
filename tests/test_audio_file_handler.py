@@ -149,6 +149,21 @@ class TestAudioFile:
             assert getter(obj, "#") == a["D"]  # No assignment
 
     @pytest.mark.parametrize(
+        "file, options, result",
+        [
+            ("0-s", {}, "R"),
+            ("0-s", {"remove": False}, "N"),
+            ("sin-s", {}, "M"),
+            ("sin-s", {"monoize": False}, "N"),
+            ("sin.L", {"join_file": True}, "J"),
+            ("sin.L", {"join": False, "join_file": True}, "N"),
+        ]
+    )
+    def test_analyze_actions(self, file, options, result):
+        with AudioFile(get_audio_path(file)) as af:
+            assert af.default_action(options) == result
+
+    @pytest.mark.parametrize(
         "options, func",
         [
             ({"action": "M"}, "monoize"),
