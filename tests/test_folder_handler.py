@@ -15,8 +15,10 @@ audio_files = [
     "empty",
     "sin-l50",
     "sin-m",
+    "sin.L",
     "sin-r25",
     "sin-r100",
+    "sin.R",
     "sin-s",
     "sin+tri",
 ]
