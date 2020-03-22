@@ -73,10 +73,14 @@ class AudioFile:
         filename = basename[: -len(ext)]
         try:
             filebase, ch = filename.rsplit(self.options.get("delimiter", "."), 1)
-            channelname = "1" if ch == "L" else "2" if ch == "R" else ch
+            ch = "1" if ch == "L" else "2" if ch == "R" else ch
+            if ch.isdigit():
+                channelnum = ch
+            else:
+                raise ValueError
         except ValueError:
             filebase = filename
-            channelname = ""
+            channelnum = ""
         self._location = {
             "dirname": dirname,
             "basename": basename,
@@ -84,7 +88,7 @@ class AudioFile:
             "extension": ext,
             "root": root,
             "filebase": filebase,
-            "channelname": channelname,
+            "channelnum": channelnum,
         }
         return self._location
 
@@ -95,7 +99,7 @@ class AudioFile:
     extension = property(lambda self: self.location["extension"])
     root = property(lambda self: self.location["root"])
     filebase = property(lambda self: self.location["filebase"])
-    channelname = property(lambda self: self.location["channelname"])
+    channelnum = property(lambda self: self.location["channelnum"])
 
     validChannel = property(lambda self: self._validChannel)
 
@@ -280,8 +284,8 @@ class AudioFile:
 
     def split(self, delimiter=".", remove=True):
         if self.file and self.channels > 1:
-            channelnames = ("L", "R") if self.channels == 2 else range(self.channels)
-            for i, ch in enumerate(channelnames):
+            channelnums = ("L", "R") if self.channels == 2 else range(self.channels)
+            for i, ch in enumerate(channelnums):
                 self.file.seek(0)
                 data = self.file.read()[i]
                 st = self.file.subtype
