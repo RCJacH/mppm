@@ -121,7 +121,7 @@ class FileList:
             self._files = []
             self._folderpath = folder
 
-    def update_options(self, options={}):
+    def update_options(self, options):
         self._options.update(options)
 
     def _search_folder(self, folder):

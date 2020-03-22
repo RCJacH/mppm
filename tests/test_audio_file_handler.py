@@ -309,6 +309,7 @@ class TestAudioFile:
             ),
             pytest.param(["sin-m.L", "sin-m.R"], {"newfile": "sin.wav"}, "sin.wav", False, id="newfile"),
             pytest.param(["sin-m.L", "sin-m.R"], {"remove": False}, "sin-m.wav", True, id="noRemove"),
+            pytest.param(["sin-m_L", "sin-m_R"], {"delimiter": "_"}, "sin-m.wav", False, id="delimiter"),
             pytest.param(["sin-m.L", "sin-m.R"], {"string": True}, "sin-m.wav", False, id="othersAsString"),
             pytest.param(["sin-m.L", "sin-m.R"], {"error": FileNotFoundError}, "sin-m.wav", False, id="Nofile"),
             pytest.param(["sin-m.1", "sin-m.2", 'sin-m.3'], {}, "sin-m.wav", False, id="multichannel"),
@@ -332,6 +333,7 @@ class TestAudioFile:
 
         root = files.pop(0)
         with AudioFile(filepath=root) as obj:
+            obj.update_options({"delimiter": delimiter})
             if error is not None:
                 with pytest.raises(error) as e:
                     obj.join(others=files[0][0:-2], **params)
