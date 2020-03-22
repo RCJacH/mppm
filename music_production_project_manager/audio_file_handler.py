@@ -2,8 +2,8 @@ import math
 import os
 import shutil
 import re
-import numpy as np
 
+import numpy as np
 from soundfile import SoundFile as sf
 from soundfile import SEEK_END
 
@@ -69,15 +69,21 @@ class AudioFile:
         path, base = os.path.split(self._filepath)
         pathfile, ext = os.path.splitext(self._filepath)
         file = base[: -len(ext)]
-        self._location = [path, base, file, ext, pathfile]
+        self._location = {
+            "pathname": path,
+            "basename": base,
+            "filename": file,
+            "extension": ext,
+            "pathfile": pathfile,
+        }
         return self._location
 
     filepath = property(lambda self: self._filepath)
-    pathname = property(lambda self: self.location[0])
-    basename = property(lambda self: self.location[1])
-    filename = property(lambda self: self.location[2])
-    extension = property(lambda self: self.location[3])
-    pathfile = property(lambda self: self.location[4])
+    pathname = property(lambda self: self.location["pathname"])
+    basename = property(lambda self: self.location["basename"])
+    filename = property(lambda self: self.location["filename"])
+    extension = property(lambda self: self.location["extension"])
+    pathfile = property(lambda self: self.location["pathfile"])
 
     validChannel = property(lambda self: self._validChannel)
 
@@ -159,7 +165,14 @@ class AudioFile:
 
     @action.setter
     def action(self, v):
-        if v in "DMRSJN":
+        if v in "DMRSJN" or v.lower() in (
+            "default",
+            "monoize",
+            "remove",
+            "split",
+            "join",
+            "none",
+        ):
             self._action = v
 
     def analyze(self):
@@ -199,27 +212,29 @@ class AudioFile:
             info.set_info(sampleblock)
         return info
 
+    def default_action(self, options={}):
+        m = options.pop("monoize", True)
+        r = options.pop("remove", True)
+        j = options.pop("join", True)
+        if self.isEmpty and r:
+            return "R"
+        if self.isFakeStereo and m:
+            return "M"
+        if options.pop("join_file", False) and j:
+            return "J"
+        return "N"
+
     def proceed(self, options={}):
         if options.pop("read_only", False):
             return self.action
 
-        m = options.pop("monoize", True)
-        r = options.pop("remove", True)
-        j = options.pop("join", True)
-        delimiter = options.pop("delimiter", ".")
-
-        if self._action == "D":
-            if self.isEmpty and r:
-                return self.remove(**options.pop("remove_options", {}))
-            if self.isFakeStereo and m:
-                return self.monoize(**options.pop("monoize_options", {}))
-        if self._action == "M" and m:
+        if self._action == "M":
             return self.monoize(**options.pop("monoize_options", {}))
-        if self._action == "R" and r:
+        if self._action == "R":
             return self.remove(forced=True)
         if self._action == "S":
             return self.split(**options.pop("split_options", {}))
-        if self._action == "J" and j:
+        if self._action == "J":
             return self.join(**options.pop("join_options", {}))
 
     def backup(self, filepath, read_only=False):

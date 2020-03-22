@@ -149,13 +149,28 @@ class TestAudioFile:
             assert getter(obj, "#") == a["D"]  # No assignment
 
     @pytest.mark.parametrize(
+        "file, options, result",
+        [
+            ("0-s", {}, "R"),
+            ("0-s", {"remove": False}, "N"),
+            ("sin-s", {}, "M"),
+            ("sin-s", {"monoize": False}, "N"),
+            ("sin.L", {"join_file": True}, "J"),
+            ("sin.L", {"join": False, "join_file": True}, "N"),
+        ]
+    )
+    def test_analyze_actions(self, file, options, result):
+        with AudioFile(get_audio_path(file)) as af:
+            assert af.default_action(options) == result
+
+    @pytest.mark.parametrize(
         "options, func",
         [
             ({"action": "M"}, "monoize"),
             ({"action": "R"}, "remove"),
             ({"action": "S"}, "split"),
             ({"action": "J"}, "join"),
-            ({"action": "S", "delimiter": "-"}, "split"),
+            ({"action": "S", "split_options": {"delimiter": "-"}}, "split"),
         ],
     )
     def test_proceed(self, mocker, options, func):
@@ -168,13 +183,6 @@ class TestAudioFile:
                 getattr(obj, func).assert_called()
             else:
                 getattr(obj, func).assert_called_with(**options)
-
-    @pytest.mark.parametrize("file, func", [("sin-s", "monoize"), ("0-s", "remove")])
-    def test_proceed_default(self, mocker, file, func):
-        with AudioFile(get_audio_path(file)) as obj:
-            setattr(obj, func, mocker.Mock())
-            obj.proceed()
-            getattr(obj, func).assert_called()
 
     def test_proceed_read_only(self, mocker):
         with AudioFile("empty") as obj:
