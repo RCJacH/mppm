@@ -205,6 +205,19 @@ class AudioFile:
             info.set_info(sampleblock)
         return info
 
+    def default_action(self, options={}):
+        m = options.pop("monoize", True)
+        r = options.pop("remove", True)
+        j = options.pop("join", True)
+        if self.isEmpty and r:
+            return "R"
+        if self.isFakeStereo and m:
+            return "M"
+        if options.pop("join_file", False) and j:
+            return "J"
+        return "N"
+
+    # TODO: Remove default and Keep only other methods
     def proceed(self, options={}):
         if options.pop("read_only", False):
             return self.action
