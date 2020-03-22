@@ -170,7 +170,7 @@ class TestAudioFile:
             ({"action": "R"}, "remove"),
             ({"action": "S"}, "split"),
             ({"action": "J"}, "join"),
-            ({"action": "S", "delimiter": "-"}, "split"),
+            ({"action": "S", "split_options": {"delimiter": "-"}}, "split"),
         ],
     )
     def test_proceed(self, mocker, options, func):
@@ -183,13 +183,6 @@ class TestAudioFile:
                 getattr(obj, func).assert_called()
             else:
                 getattr(obj, func).assert_called_with(**options)
-
-    @pytest.mark.parametrize("file, func", [("sin-s", "monoize"), ("0-s", "remove")])
-    def test_proceed_default(self, mocker, file, func):
-        with AudioFile(get_audio_path(file)) as obj:
-            setattr(obj, func, mocker.Mock())
-            obj.proceed()
-            getattr(obj, func).assert_called()
 
     def test_proceed_read_only(self, mocker):
         with AudioFile("empty") as obj:
