@@ -167,12 +167,13 @@ class TestAudioFile:
             ("0-s", {"remove": False}, "N"),
             ("sin-s", {}, "M"),
             ("sin-s", {"monoize": False}, "N"),
-            ("sin.L", {"join_file": True}, "J"),
+            ("sin.L", {"join_files": ["1"]}, "J"),
             ("sin.L", {"join": False, "join_file": True}, "N"),
         ]
     )
     def test_analyze_actions(self, file, options, result):
         with AudioFile(get_audio_path(file)) as af:
+            af.join_files = options.pop("join_files", [])
             assert af.default_action(options) == result
 
     @pytest.mark.parametrize(
@@ -182,7 +183,7 @@ class TestAudioFile:
             ({"action": "R"}, "remove"),
             ({"action": "S"}, "split"),
             ({"action": "J"}, "join"),
-            ({"action": "S", "split_options": {"delimiter": "-"}}, "split"),
+            ({"action": "S", "delimiter": "-"}, "split"),
         ],
     )
     def test_proceed(self, mocker, options, func):
@@ -190,6 +191,8 @@ class TestAudioFile:
             setattr(obj, func, mocker.Mock())
             if "action" in options:
                 obj.action = options.pop("action")
+            if "delimiter" in options:
+                obj.update_options({"delimiter": options.pop("delimiter")})
             obj.proceed(options=options)
             if not options:
                 getattr(obj, func).assert_called()

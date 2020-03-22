@@ -43,6 +43,7 @@ class AudioFile:
         self._samplerate = None
         self._action = "N"
         self._options = options or {"delimiter": "."}
+        self.join_files = []
         if filepath is not None and analyze:
             self.file = filepath
 
@@ -242,7 +243,7 @@ class AudioFile:
             return "R"
         if self.isFakeStereo and m:
             return "M"
-        if options.get("join_file", False) and j:
+        if self.join_files and j:
             return "J"
         return "N"
 

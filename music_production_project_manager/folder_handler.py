@@ -57,8 +57,6 @@ class FileList:
         self._options = options or {
             "backup": True,
             "delimiter": ".",
-            "null_threshold": -100,
-            "empty_threshold": -100,
         }
         self._files = []
         self._joinlists = None
