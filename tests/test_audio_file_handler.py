@@ -10,7 +10,7 @@ import pytest
 from soundfile import SoundFile as sf
 from soundfile import read
 
-from music_production_project_manager.audio_file_handler import AudioFile
+from mppm import AudioFile
 
 
 def get_audio_path(name="", ext=".wav"):

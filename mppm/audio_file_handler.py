@@ -7,8 +7,8 @@ import numpy as np
 from soundfile import SoundFile as sf
 from soundfile import SEEK_END
 
-from music_production_project_manager.analyze import SampleblockChannelInfo
-from music_production_project_manager.utils import lazy_property
+from .analyze import SampleblockChannelInfo
+from .utils import lazy_property
 
 import logging
 

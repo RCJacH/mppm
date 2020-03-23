@@ -1,8 +1,8 @@
 import os
 import shutil
 
-from music_production_project_manager.audio_file_handler import AudioFile
-from music_production_project_manager.utils import lazy_property
+from .audio_file_handler import AudioFile
+from .utils import lazy_property
 
 extensions = [".wav", ".wave"]
 """
