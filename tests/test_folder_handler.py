@@ -1,8 +1,7 @@
 import os
 import shutil
 import pytest
-from music_production_project_manager.folder_handler import FileList
-from music_production_project_manager.audio_file_handler import AudioFile
+from mppm import FileList, AudioFile
 
 
 def get_audio_path(filename=""):
