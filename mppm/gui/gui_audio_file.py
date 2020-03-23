@@ -32,7 +32,8 @@ class FolderBrowser:
         self.null_threshold.set(-100)
         self.empty_threshold = tk.DoubleVar()
         self.empty_threshold.set(-100)
-        self.noBackup = tk.BooleanVar()
+        self.keepBackup = tk.BooleanVar()
+        self.keepBackup.set(True)
         self.keepMonoize = tk.BooleanVar()
         self.keepMonoize.set(True)
         self.keepRemove = tk.BooleanVar()
@@ -218,16 +219,16 @@ class FolderBrowser:
             actions,
             text="Monoize",
             variable=self.keepMonoize,
-            command=self.analyze_command,
+            command=self.actions_command,
         )
         keepRemove_button = ttk.Checkbutton(
             actions,
             text="Remove",
             variable=self.keepRemove,
-            command=self.analyze_command,
+            command=self.actions_command,
         )
         keepJoin_button = ttk.Checkbutton(
-            actions, text="Join", variable=self.keepJoin, command=self.analyze_command
+            actions, text="Join", variable=self.keepJoin, command=self.actions_command
         )
 
         keepMonoize_button.pack(side="left", expand=True)
@@ -274,7 +275,12 @@ class FolderBrowser:
         }
         self._FileList.folderpath = self.path.get()
         self._FileList.update_options(options)
+        self._FileList.update_files()
         self._FileList.set_default_action()
+
+    def actions_command(self):
+        if self.current_stage.get() > 1:
+            self.analyze_command()
 
     def analyze_command(self):
         def check(v):
@@ -353,9 +359,7 @@ class FolderBrowser:
         lb_backup = ttk.Checkbutton(
             backup,
             text="Back up to sub-folder: ",
-            variable=self.noBackup,
-            onvalue=False,
-            offvalue=True,
+            variable=self.keepBackup,
         )
         address = ttk.Entry(
             backup,
@@ -379,9 +383,7 @@ class FolderBrowser:
 
     def proceed_command(self):
         options = {
-            "noBackup": self.noBackup.get(),
-            "monoize": self.keepMonoize.get(),
-            "remove": self.keepRemove.get(),
+            "backup": self.keepBackup.get(),
         }
         self._FileList.update_options(options)
         self._FileList.proceed()

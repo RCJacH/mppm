@@ -132,12 +132,21 @@ class FileList:
     def update_options(self, options):
         self._options.update(options)
 
+    def update_files(self):
+        """Update the file list to remove missing files."""
+        try:
+            del self.files
+        except AttributeError:
+            pass
+        self._files = [f for f in self if f.file]
+
     def _search_folder(self, folder):
         return (_create_analysis(f, self._options) for f in _iterate_files(folder))
 
     def set_default_action(self):
+        """Determine the default action for each file."""
         for f in self:
-            if f in self.flat_joinlists:
+            if self.options.get("join", True) and f in self.flat_joinlists:
                 o = self._get_join_options(f)
                 f.action = "J" if o.pop("first") else "R"
                 f.join_files = o.pop("others", [])
@@ -145,16 +154,12 @@ class FileList:
                 f.action = f.default_action(self.options)
 
     def proceed(self):
+        """Backup, optionally, and carry out action for all files."""
         if self.options.pop("backup", True):
             self.backup(**self.options.pop("backup_options", {}))
         for f in self:
-            options = self.options
-            if f in self.flat_joinlists:
-                o = self._get_join_options(f)
-                f.action = "J" if o.pop("first") else "N"
-                options.update({"join_options": o})
-            f.proceed(options=options)
-        self.folderpath = self.folderpath
+            f.proceed(options=self.options)
+        self.update_files()
 
     def backup(self, folder="bak", newFolder=True, read_only=False):
         def join(*args, inc="", ext=""):
