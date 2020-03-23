@@ -16,16 +16,16 @@ class SampleblockChannelInfo:
         sampleblock=None,
         noisefloor=0,
     ):
-        """Analyze audio information in a single sampleblock
+        """Analyze audio information in a single sampleblock.
 
-        Keyword Arguments:
-            null_threshold {float} -- Ratios below this value are ignored. (default: {0.00001})
-            empty_threshold {float} -- Sample value below this value are considered silent. (default: {0.00001})
-            flag {int} -- Indicate which channel has valid sounding sample. (default: {0})
-            isCorrelated {[float]} -- The panning if both channels have fixed ratio. (default: {None})
-            sample {list} -- A valid sample of each channel of the same position. (default: {[]})
-            sampleblock {[float]} -- Sampleblock to analyze. (default: {None})
-            noisefloor {int} -- The lowest bit that contains information. (default: {0})
+        Parameters
+        ----------
+        null_threshold : float, optional
+            Ratios below this value are ignored.
+        empty_threshold : float, optional
+            Sample value below this value are considered silent.
+        sampleblock : numpy ndarray
+            The sampleblock to analyze in numpy array.
         """
 
         self.flag = flag
@@ -60,7 +60,7 @@ class SampleblockChannelInfo:
         return self.channels
 
     def set_flag(self, sampleblock):
-        """Flag on for each channel that contains a sample above empty threshold."""
+        """Flag on for channels that have sample above empty threshold."""
         if self.flag is None:
             self.flag = 0
         a = np.any(np.absolute(sampleblock) >= self.empty_threshold, axis=0).astype(int)
@@ -83,7 +83,7 @@ class SampleblockChannelInfo:
             )
 
     def _is_channelblock_correlated(self, channelblock):
-        """Analyze whether the sample-to-sample ratios of all channels are correlated."""
+        """Analyze if the sample-to-sample ratios are correlated."""
         ratios = [self._get_ratio(samples) for samples in channelblock]
         return self._is_ratio_correlated(ratios)
 
@@ -94,7 +94,7 @@ class SampleblockChannelInfo:
         return np.nan_to_num(np.divide(b, a, dtype="float")).tolist()
 
     def _is_ratio_correlated(self, ratios):
-        """Check if the difference of ratios of all channels are below null threshold."""
+        """Check if the difference of ratios are below null threshold."""
         return (
             np.absolute(np.diff(np.array(ratios), axis=0)).flat < self.null_threshold
         ).all()
@@ -119,7 +119,7 @@ class SampleblockChannelInfo:
         return len(set(sample)) == 1
 
     def _get_valid_sample(self, sampleblock):
-        """Check whether the sample has the highest absolute single-sample amplitude."""
+        """Get the sample with the highest absolute amplitude."""
         try:
             a = sampleblock[np.all(sampleblock != 0, axis=1), :]
             maxindex = np.unravel_index(np.argmax(np.absolute(a)), a.shape)

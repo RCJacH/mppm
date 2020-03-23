@@ -25,9 +25,39 @@ def _dB_to_float(v):
 
 
 class AudioFile:
+    """An Audio file.
+
+    For more documentation see the __init__() docstring.
+
+    """
     def __init__(
         self, filepath=None, blocksize=None, analyze=True, options=None,
     ):
+        """Open an audio file.
+
+        Parameters
+        ----------
+        filepath: str, optional
+            The complete path to an audio file.
+        blocksize: {str, int}, optional
+            The size of sampleblock to be used for analysis.
+        analyze: bool
+            Whether to analyze the audio file, may be turned off for
+            faster debugging of file info.
+        options: dict, optional
+            Options for working with the audio file. Possible Keys:
+            delimiter: The string or character in the filename that
+                separates root with its channel info. For example a
+                filename called sin_R.wav has delimiter of underscore
+                '_', with 'sin' as root, and R as it's channel.
+            null_threshold: A decibels number to determine the maximum
+                allowed differences between two channels for them to be
+                considered different.
+            empty_threshold: A decibels number to determine the lowest
+                value before a sample is considered noise.
+
+        """
+
         LOGGER.debug(
             f"Initiating file: {self.__class__.__name__}, with filepath: {filepath}"
         )
@@ -69,17 +99,25 @@ class AudioFile:
     def file(self, file):
         try:
             self._file = sf(file)
+        except RuntimeError:
+            self.close()
+        else:
             self._channels = self._file.channels
             self._samplerate = self._file.samplerate
             if not self.blocksize:
                 self.blocksize = self._file.frames
             self.analyze()
             self._file.seek(0)
-        except RuntimeError:
-            self.close()
 
     @property
     def action(self):
+        """The action to take for the proceed method.
+
+        Returns
+        -------
+        str
+            The name of method to use, or 'None' to skip any action.
+        """
         return {
             "D": "Default",
             "M": "Monoize",
@@ -103,6 +141,13 @@ class AudioFile:
 
     @lazy_property
     def location(self):
+        """Information regarding the location of the audio file.
+
+        Returns
+        -------
+        dict
+            List of file location related information.
+        """
         dirname, basename = os.path.split(self._filepath)
         root, ext = os.path.splitext(self._filepath)
         filename = basename[: -len(ext)]
@@ -128,13 +173,21 @@ class AudioFile:
         return self._location
 
     filepath = property(lambda self: self._filepath)
+    """The absolute location of the file."""
     dirname = property(lambda self: self.location["dirname"])
+    """The complete path to where the file is located."""
     basename = property(lambda self: self.location["basename"])
+    """The filename with extension."""
     filename = property(lambda self: self.location["filename"])
+    """The filename without extension."""
     extension = property(lambda self: self.location["extension"])
+    """The extension of the file."""
     root = property(lambda self: self.location["root"])
+    """The complete location to the file without the extension."""
     filebase = property(lambda self: self.location["filebase"])
+    """The filename without the channel number, if there is any."""
     channelnum = property(lambda self: self.location["channelnum"])
+    """The channel number in filename, such as 'L', 'R', or numerals."""
 
     options = property(lambda self: dict(self._options))
     null_threshold = property(
@@ -144,7 +197,6 @@ class AudioFile:
         lambda self: _dB_to_float(self.options.get("empty_threshold", -100))
     )
     delimiter = property(lambda self: self.options.get("delimiter", "."))
-
 
     validChannel = property(lambda self: self._validChannel)
 
@@ -164,28 +216,29 @@ class AudioFile:
 
     samplerate = property(lambda self: self._samplerate)
 
-
     isEmpty = property(lambda self: self.validChannel == 0 or self.channels == 0)
-
+    """File is pure noise or noisefloor."""
     isMono = property(lambda self: self.channels == 1 and not self.isEmpty)
-
+    """File has 1 channel and not empty."""
     isFakeStereo = property(
         lambda self: (self.isCorrelated or self.countValidChannel == 1)
         and self.channels == 2
         and not self.isEmpty
     )
-
+    """File has 2 channels with identical value."""
     isStereo = property(
         lambda self: self.channels == 2
         and self.countValidChannel == 2
         and not self.isCorrelated
     )
+    """File has 2 channels with different values."""
 
     isMultichannel = property(
         lambda self: self.channels > 2
         and self.countValidChannel > 2
         and not self.isCorrelated
     )
+    """File has more than 2 channels"""
 
     def update_options(self, options):
         self._options.update(options)
@@ -201,6 +254,7 @@ class AudioFile:
             self._file.seek(0)
 
     def analyze(self):
+        """Analyze the audio file for channel information."""
         if self.file:
             info = self._analyze_blocks()
             if info is not None:
@@ -212,8 +266,7 @@ class AudioFile:
             )
 
     def _analyze_valid_channels(self, flag=0, isCorrelated=False, sample=[]):
-        """ Analyze which channels to keep
-        """
+        """Determine which channels have meaningful values."""
         if flag == None or flag == 0:
             return 0  # Empty File
         if self.channels == 1 and flag:
@@ -238,6 +291,18 @@ class AudioFile:
         return info
 
     def default_action(self, options={}):
+        """Determine the default action to take.
+
+        Parameters
+        ----------
+        options : {str}, optional
+            List of actions availlable.
+
+        Returns
+        -------
+        str
+            The action code to be used for action.setter.
+        """
         m = options.get("monoize", True)
         r = options.get("remove", True)
         j = options.get("join", True)
@@ -250,6 +315,13 @@ class AudioFile:
         return "N"
 
     def proceed(self, options={}):
+        """Carry out the set action of the file.
+
+        Parameters
+        ----------
+        options : dict, optional
+            keyword arguments for the selected action method.
+        """
         if options.get("read_only", False):
             return self.action
 
@@ -263,6 +335,21 @@ class AudioFile:
             return self.join(**options.get("join_options", {}))
 
     def backup(self, filepath, read_only=False):
+        """Make a identical copy of the file to a desinated filepath.
+
+        Parameters
+        ----------
+        filepath : str
+            The location of the new file, accepts both absolute and
+            relative location string.
+        read_only : bool, optional
+            Display the result filepath for debugging.
+
+        Returns
+        -------
+        str
+            The location of the new file.
+        """
         try:
             if not read_only:
                 shutil.copy2(self._filepath, filepath)
@@ -273,6 +360,15 @@ class AudioFile:
             return self.backup(filepath)
 
     def monoize(self, channel=None):
+        """Convert a non-mono audio file to single-channel one.
+
+        Parameters
+        ----------
+        channel : int, optional
+            The channel to keep manually. If no valid input received,
+            the channel with the highest amplitude is selected, if the
+            file is a fake stereo one.
+        """
         if self.file and (channel or self.isFakeStereo):
             channel = channel or self._validChannel - 1
             data = [x[channel] for x in self.file.read()]
@@ -285,11 +381,29 @@ class AudioFile:
             self.file = self._filepath
 
     def remove(self, forced=False):
+        """Remove the file from the system.
+
+        Parameters
+        ----------
+        forced : bool, optional
+            Remove even when the file is not empty.
+        """
         if self.file and (forced or self.isEmpty):
             self.close()
             os.remove(self._filepath)
 
     def split(self, remove=True):
+        """Split a non-single channeled file into mono files.
+
+        Create a new mono audio file for each channel of the original
+        one, mainly used for DAWs that distinguish between stereo audio
+        files from mono ones.
+
+        Parameters
+        ----------
+        remove : bool, optional
+            Remove the original file from system, default to True.
+        """
         if self.file and self.channels > 1:
             channelnums = ("L", "R") if self.channels == 2 else range(self.channels)
             for i, ch in enumerate(channelnums):
@@ -342,6 +456,37 @@ class AudioFile:
                 os.remove(self._filepath)
 
     def join(self, others=None, remove=True, forced=False, newfile=None):
+        """Join several files together into a new one.
+
+        Used for joining audio file of the same source but with different
+        channels (multi-mic recordings) into a single multi-channeled or
+        stereo file.
+
+        Parameters
+        ----------
+        others : [str, AudioFile], optional
+            List of other files to join, abort action if no other files
+            are received.
+        remove : bool, optional
+            Whether to delete the original files after joining, by
+            default True.
+        forced : bool, optional
+            Whether to join files even when they have different length,
+            by default False.
+        newfile : str, optional
+            The absolute location of the new file, if no input, use path
+            + filebase of self.
+
+        Returns
+        -------
+        str
+            The absolute location of the new file.
+
+        Raises
+        ------
+        FileNotFoundError
+            Any file not found in others will raise this error.
+        """
         if not others:
             return
 
