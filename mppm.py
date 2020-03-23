@@ -1,5 +1,5 @@
 import tkinter as tk
-from mppm import FolderBrowser
+from mppm.gui import FolderBrowser
 
 if __name__ == "__main__":
     root = tk.Tk()
