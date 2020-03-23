@@ -5,7 +5,7 @@ from tkinter import ttk
 from tkinter import filedialog
 
 
-from mppm.folder_handler import FileList
+from mppm import FileList
 from .style import core
 from .style import components
 from .default_style import DefaultSetting
@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 _valid_path_chars = frozenset(f"-_.() {string.ascii_letters}{string.digits}")
+
 
 class FolderBrowser:
     def __init__(self, master=None, *args, **kwargs):
@@ -36,6 +37,8 @@ class FolderBrowser:
         self.keepMonoize.set(True)
         self.keepRemove = tk.BooleanVar()
         self.keepRemove.set(True)
+        self.keepJoin = tk.BooleanVar()
+        self.keepJoin.set(True)
         self.backupPath = tk.StringVar()
         self.backupPath.set(self._FileList.options["backup_folder"])
 
@@ -137,6 +140,7 @@ class FolderBrowser:
     def setup_input(self, master):
         frame = ttk.Frame(master)
         top = ttk.Frame(frame)
+        mid = ttk.Frame(frame)
         bottom = ttk.Frame(frame)
 
         lb_blocksize = ttk.Label(None, text="Blocksize", padding=[8, 0] * 2)
@@ -200,6 +204,36 @@ class FolderBrowser:
         )
         en_empty_threshold.pack(side="bottom")
 
+        lb_actions = ttk.Label(None, text="Actions", padding=[8, 0] * 2)
+        actions = ttk.LabelFrame(
+            mid,
+            labelwidget=lb_actions,
+            text="Actions",
+            labelanchor="n",
+            borderwidth=1,
+            padding=[8, 8, 8, 16],
+            relief="sunken",
+        )
+        keepMonoize_button = ttk.Checkbutton(
+            actions,
+            text="Monoize",
+            variable=self.keepMonoize,
+            command=self.analyze_command,
+        )
+        keepRemove_button = ttk.Checkbutton(
+            actions,
+            text="Remove",
+            variable=self.keepRemove,
+            command=self.analyze_command,
+        )
+        keepJoin_button = ttk.Checkbutton(
+            actions, text="Join", variable=self.keepJoin, command=self.analyze_command
+        )
+
+        keepMonoize_button.pack(side="left", expand=True)
+        keepRemove_button.pack(side="left", expand=True)
+        keepJoin_button.pack(side="left", expand=True)
+
         self.bt_analyze = ttk.Button(
             bottom, text="Analyze", command=self.analyze_command
         )
@@ -208,7 +242,9 @@ class FolderBrowser:
         blocksize.pack(side="left", expand=True, fill="x", padx=[0, 4])
         null_threshold.pack(side="left", expand=True, fill="x", padx=[4, 4])
         empty_threshold.pack(side="left", expand=True, fill="x", padx=[4, 0])
+        actions.pack(side="left", expand=True, fill="x")
         top.pack(expand=True, fill="x")
+        mid.pack(expand=True, fill="x", pady=8)
         bottom.pack(expand=True, fill="x", pady=8)
 
         self.fr_input = frame
@@ -227,6 +263,19 @@ class FolderBrowser:
         except ValueError:
             return False
 
+    def update_filelist(self):
+        options = {
+            "null_threshold": self.null_threshold.get(),
+            "empty_threshold": self.empty_threshold.get(),
+            "blocksize": self.blocksize.get(),
+            "monoize": self.keepMonoize.get(),
+            "remove": self.keepRemove.get(),
+            "join": self.keepJoin.get(),
+        }
+        self._FileList.folderpath = self.path.get()
+        self._FileList.update_options(options)
+        self._FileList.set_default_action()
+
     def analyze_command(self):
         def check(v):
             return "x" if v else ""
@@ -239,20 +288,13 @@ class FolderBrowser:
             return
 
         self.stage(-1)
-        options = {
-            "null_threshold": self.null_threshold.get(),
-            "empty_threshold": self.empty_threshold.get(),
-            "blocksize": self.blocksize.get(),
-        }
-        self._FileList.folderpath = self.path.get()
-        self._FileList.update_options(options)
-        self._FileList.set_default_action()
+        self.update_filelist()
         self.file_tree.delete(*self.file_tree.get_children())
         for file in self._FileList:
             self.file_tree.insert(
                 "",
                 "end",
-                text=file.filename,
+                text=file.basename,
                 values=[
                     file.channels,
                     check(file.isEmpty),
@@ -322,18 +364,10 @@ class FolderBrowser:
             validate="key",
             validatecommand=(master.register(self.path_validation), "%S"),
         )
-        keepMonoize_button = ttk.Checkbutton(
-            top, text="Monoize", variable=self.keepMonoize,
-        )
-        keepRemove_button = ttk.Checkbutton(
-            top, text="Remove", variable=self.keepRemove,
-        )
 
         lb_backup.pack(side="left", expand=False)
         address.pack(side="left", expand=True, fill="x", padx=8)
         backup.pack(side="left", expand=True)
-        keepMonoize_button.pack(side="left", expand=True)
-        keepRemove_button.pack(side="left", expand=True)
 
         top.pack(expand=False, fill="x", pady=16)
         bottom.pack(expand=True, fill="both")
