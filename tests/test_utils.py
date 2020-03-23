@@ -1,6 +1,6 @@
 import pytest
 
-from music_production_project_manager.utils import lazy_property
+from mppm.utils import lazy_property
 
 class LazyPropertyClass:
     def __init__(self):

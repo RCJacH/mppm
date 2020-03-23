@@ -5,7 +5,7 @@ from tkinter import ttk
 from tkinter import filedialog
 
 
-from music_production_project_manager.folder_handler import FileList
+from mppm.folder_handler import FileList
 from .style import core
 from .style import components
 from .default_style import DefaultSetting

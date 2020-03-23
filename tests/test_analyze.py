@@ -4,7 +4,7 @@ Tests for 'analyze' module
 import pytest
 import os
 import numpy as np
-from music_production_project_manager.analyze import SampleblockChannelInfo
+from mppm import SampleblockChannelInfo
 from soundfile import read
 
 

@@ -1,5 +1,5 @@
 import pytest
-from music_production_project_manager.gui.style import core
+from mppm.gui.style import core
 
 
 class ColorSample:
