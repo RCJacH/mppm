@@ -54,6 +54,15 @@ def _is_audio_file(file):
 
 class FileList:
     def __init__(self, folder=None, options=None):
+        """List of files to work with.
+
+        Parameters
+        ----------
+        folder : str, optional
+            Absolute location to search for files.
+        options : dict, optional
+            Options for file related actions.
+        """
         self._options = options or {
             "backup": True,
             "backup_folder": "bak",
