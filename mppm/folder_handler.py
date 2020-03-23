@@ -133,6 +133,7 @@ class FileList:
         self._options.update(options)
 
     def update_files(self):
+        """Update the file list to remove missing files."""
         try:
             del self.files
         except AttributeError:
@@ -143,6 +144,7 @@ class FileList:
         return (_create_analysis(f, self._options) for f in _iterate_files(folder))
 
     def set_default_action(self):
+        """Determine the default action for each file."""
         for f in self:
             if self.options.get("join", True) and f in self.flat_joinlists:
                 o = self._get_join_options(f)
@@ -152,6 +154,7 @@ class FileList:
                 f.action = f.default_action(self.options)
 
     def proceed(self):
+        """Backup, optionally, and carry out action for all files."""
         if self.options.pop("backup", True):
             self.backup(**self.options.pop("backup_options", {}))
         for f in self:
