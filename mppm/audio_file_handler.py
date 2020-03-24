@@ -488,8 +488,11 @@ class AudioFile:
         FileNotFoundError
             Any file not found in others will raise this error.
         """
-        if not others:
+        if not others and not self.join_files:
             return
+
+        if not others:
+            others = self.join_files
 
         if not isinstance(others, list):
             others = [others]
