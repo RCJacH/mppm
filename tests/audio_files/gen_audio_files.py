@@ -71,6 +71,10 @@ class Generator:
 
 if __name__ == "__main__":
     wt_gen = Generator()
+    dirname = os.path.dirname(os.path.realpath(__file__))
+    for f in os.listdir(dirname):
+        if f.endswith(".wav"):
+            os.remove(os.path.join(dirname, f))
     for name in [
         "sin-m",
         "sin-s",
