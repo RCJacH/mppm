@@ -1,4 +1,4 @@
-from music_production_project_manager import __version__
+from mppm import __version__
 
 
 def test_version():

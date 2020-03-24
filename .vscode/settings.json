@@ -1,4 +1,7 @@
 {
+    "code-runner.executorMap": {
+        "python": "$pythonPath $fullFileName",
+    },
     "python.linting.flake8Enabled": false,
     "python.linting.pylintEnabled": false,
     "python.linting.mypyEnabled": true,
@@ -10,5 +13,9 @@
     "python.testing.unittestEnabled": false,
     "python.testing.nosetestsEnabled": false,
     "python.testing.pytestEnabled": true,
-    "python.terminal.activateEnvInCurrentTerminal": true
+    "python.terminal.activateEnvInCurrentTerminal": true,
+    "python.testing.pytestArgs": [
+        "."
+    ],
+    "restructuredtext.confPath": ""
 }
