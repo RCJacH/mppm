@@ -136,6 +136,8 @@ class FileList:
         """Update the file list to remove missing files."""
         try:
             del self.files
+            del self.joinlists
+            del self.flat_joinlists
         except AttributeError:
             pass
         self._files = [f for f in self if f.file]
