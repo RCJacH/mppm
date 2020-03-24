@@ -5,7 +5,7 @@ description = "A set of tools for project related tasks during music production"
 authors = ["RCJacH <RCJacH@Outlook.com>"]
 license = "GPL-3.0-or-later"
 repository = "https://github.com/RCJacH/mppm"
-classifier = [
+classifiers = [
     "Programming Language :: Python",
     "Topic :: Artistic Software",
     "Topic :: Desktop Environment",
