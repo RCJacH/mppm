@@ -388,4 +388,4 @@ class FolderBrowser:
         self._FileList.update_options(options)
         self._FileList.proceed()
         self.analyze_command()
-        self.stage(0)
+        self.stage(3)
