@@ -325,6 +325,7 @@ class AudioFile:
         if options.get("read_only", False):
             return self.action
 
+        options = {**self.options, **options}
         if self._action == "M":
             return self.monoize(**options.get("monoize_options", {}))
         if self._action == "R":
@@ -504,14 +505,7 @@ class AudioFile:
             a.append(each)
             max_frames = max(max_frames, each.frames)
 
-        pos = len(others) // 10 + 2
-        newfile = (
-            (self.root[-pos] == self.delimiter and self.root[:-pos] + self.extension)
-            if (not newfile and self.delimiter)
-            else newfile
-            if newfile
-            else self.filepath
-        )
+        newfile = self.get_newfile_path(newfile)
 
         st = self.file.subtype
         ed = self.file.endian
@@ -530,4 +524,23 @@ class AudioFile:
         if remove:
             for each in a:
                 each.remove(forced=True)
-        return newfile
+
+        try:
+            del self.location
+        except AttributeError:
+            pass
+        self.file = newfile
+        return self
+
+    def get_newfile_path(self, s=None):
+        join = os.path.join
+        if not s:
+            if self.channelnum:
+                return join(self.dirname, self.filebase + self.extension)
+            else:
+                return self.filepath
+        else:
+            if os.sep not in s:
+                return join(self.dirname, s + self.extension)
+            else:
+                return s

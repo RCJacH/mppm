@@ -152,6 +152,7 @@ class FileList:
                 o = self._get_join_options(f)
                 f.action = "J" if o.pop("first") else "R"
                 f.join_files = o.pop("others", [])
+                f.update_options({"join_options": o})
             else:
                 f.action = f.default_action(self.options)
 
@@ -194,7 +195,11 @@ class FileList:
         base = f.filebase
         l = self.joinlists[base]
         if not l.index(f):
-            return {"first": True, "others": l[1:], "newfile": base}
+            return {
+                "first": True,
+                "others": l[1:],
+                "newfile": os.path.join(f.dirname, base + f.extension),
+            }
         else:
             return {"first": False}
 
