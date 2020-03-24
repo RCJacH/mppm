@@ -15,7 +15,7 @@
             "name": "Python: Package",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/mppm.py",
+            "program": "${workspaceFolder}/main.py",
             "console": "integratedTerminal"
         }
     ]
