@@ -198,7 +198,7 @@ class FileList:
             return {
                 "first": True,
                 "others": l[1:],
-                "newfile": os.path.join(f.dirname, base + f.extension),
+                "newfile": base,
             }
         else:
             return {"first": False}
