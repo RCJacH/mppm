@@ -3,6 +3,15 @@ name = "music_production_project_manager"
 version = "0.1.0"
 description = "A set of tools for project related tasks during music production"
 authors = ["RCJacH <RCJacH@Outlook.com>"]
+license = "GPL-3.0-or-later"
+repository = "https://github.com/RCJacH/mppm"
+classifier = [
+    "Programming Language :: Python",
+    "Topic :: Artistic Software",
+    "Topic :: Desktop Environment",
+    "Topic :: Multimedia :: Sound/Audio",
+    "Topic :: Multimedia :: Sound/Audio :: Analysis"
+]
 
 [tool.poetry.dependencies]
 python = "^3.8"
