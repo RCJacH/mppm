@@ -16,5 +16,6 @@
     "python.terminal.activateEnvInCurrentTerminal": true,
     "python.testing.pytestArgs": [
         "."
-    ]
+    ],
+    "restructuredtext.confPath": ""
 }
