@@ -109,7 +109,7 @@ class TestAudioFile:
             pytest.param("sin.R", [".wav", "sin", "2"], id="OneDot"),
             pytest.param("sin.wave.R", [".wav", "sin.wave", "2"], id="MultiDots"),
             pytest.param("sin.wave", [".wav", "sin.wave", ""], id="InvalidDot"),
-        ]
+        ],
     )
     def test_file_names(self, filename, othernames):
         filepath = get_audio_path(filename)
@@ -169,7 +169,7 @@ class TestAudioFile:
             ("sin-s", {"monoize": False}, "N"),
             ("sin.L", {"join_files": ["1"]}, "J"),
             ("sin.L", {"join": False, "join_file": True}, "N"),
-        ]
+        ],
     )
     def test_analyze_actions(self, file, options, result):
         with AudioFile(get_audio_path(file)) as af:
@@ -310,12 +310,48 @@ class TestAudioFile:
             pytest.param(
                 ["sin-m.L", "sin-m.R"], {}, "sin-m.wav", False, id="two_monos"
             ),
-            pytest.param(["sin-m.L", "sin-m.R"], {"newfile": "sin.wav"}, "sin.wav", False, id="newfile"),
-            pytest.param(["sin-m.L", "sin-m.R"], {"remove": False}, "sin-m.wav", True, id="noRemove"),
-            pytest.param(["sin-m_L", "sin-m_R"], {"delimiter": "_"}, "sin-m.wav", False, id="delimiter"),
-            pytest.param(["sin-m.L", "sin-m.R"], {"string": True}, "sin-m.wav", False, id="othersAsString"),
-            pytest.param(["sin-m.L", "sin-m.R"], {"error": FileNotFoundError}, "sin-m.wav", False, id="Nofile"),
-            pytest.param(["sin-m.1", "sin-m.2", 'sin-m.3'], {}, "sin-m.wav", False, id="multichannel"),
+            pytest.param(
+                ["sin-m.L", "sin-m.R"],
+                {"newfile": "sin"},
+                "sin.wav",
+                False,
+                id="newfile",
+            ),
+            pytest.param(
+                ["sin-m.L", "sin-m.R"],
+                {"remove": False},
+                "sin-m.wav",
+                True,
+                id="noRemove",
+            ),
+            pytest.param(
+                ["sin-m_L", "sin-m_R"],
+                {"delimiter": "_"},
+                "sin-m.wav",
+                False,
+                id="delimiter",
+            ),
+            pytest.param(
+                ["sin-m.L", "sin-m.R"],
+                {"string": True},
+                "sin-m.wav",
+                False,
+                id="othersAsString",
+            ),
+            pytest.param(
+                ["sin-m.L", "sin-m.R"],
+                {"error": FileNotFoundError},
+                "sin-m.wav",
+                False,
+                id="Nofile",
+            ),
+            pytest.param(
+                ["sin-m.1", "sin-m.2", "sin-m.3"],
+                {},
+                "sin-m.wav",
+                False,
+                id="multichannel",
+            ),
         ],
     )
     def test_join(self, tmp_file, files, params, filename, others):
@@ -327,8 +363,6 @@ class TestAudioFile:
         b_string = params.pop("string", False)
         error = params.pop("error", None)
 
-        if "newfile" in params:
-            params.update({"newfile": os.path.join(path, params["newfile"])})
         files = [os.path.join(path, x + ext) for x in files]
         for f in files:
             if not f == file:
@@ -361,3 +395,21 @@ class TestAudioFile:
             obj.join(others=file2, forced=True, newfile=os.path.join(path, "new.wav"))
             assert os.path.exists(os.path.join(path, "new.wav"))
             assert all(not os.path.exists(f) for f in (file, file2))
+
+    @pytest.mark.parametrize(
+        "file, s, result",
+        [
+            ("sin-m", None, get_audio_path("sin-m")),
+            ("sin.L", None, get_audio_path("sin")),
+            ("sin-m", "saw", get_audio_path("saw")),
+            ("sin.L", "saw", get_audio_path("saw")),
+            (
+                "sin.L",
+                os.path.join(get_audio_path(), "bak", "saw"),
+                os.path.join(get_audio_path(), "bak", "saw"),
+            ),
+        ],
+    )
+    def test_get_newfile_path(self, file, s, result):
+        with AudioFile(get_audio_path(file)) as af:
+            assert af.get_newfile_path(s) == result

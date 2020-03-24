@@ -218,7 +218,6 @@ class TestFileList:
     def test_set_default_action(self):
         with FileList(get_audio_path()) as fl:
             fl.set_default_action()
-            print(fl.filenames)
             assert fl.actions == [
                 "Remove",
                 "Remove",
