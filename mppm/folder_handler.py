@@ -4,7 +4,7 @@ import shutil
 from .audio_file_handler import AudioFile
 from .utils import lazy_property
 
-extensions = [".wav", ".wave"]
+extensions = [".aiff", ".caf", ".flag", ".ogg", "raw", ".wav", ".wave"]
 """
 Potential additions supported by PySoundFile library
 {'AIFF': 'AIFF (Apple/SGI)',
