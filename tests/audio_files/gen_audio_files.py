@@ -2,8 +2,8 @@ import os
 import numpy as np
 from soundfile import write
 
-class Wavetable:
 
+class Wavetable:
     def __init__(self, size=64):
         self.size = size
 
@@ -20,8 +20,8 @@ class Wavetable:
     def plswave(self):
         width = 0
         pls = self.basewave()
-        pls[np.where(pls < width)[0]] = -1.
-        pls[np.where(pls >= width)[0]] = 1.
+        pls[np.where(pls < width)[0]] = -1.0
+        pls[np.where(pls >= width)[0]] = 1.0
         return pls
 
     def triwave(self):
@@ -35,18 +35,17 @@ class Wavetable:
 
 
 class Generator:
-
     def path(self, filename, extension="wav"):
-        return os.path.join('tests', 'audio_files', filename+"."+extension)
+        return os.path.join("tests", "audio_files", filename + "." + extension)
 
     def set_pan(self, x, pct):
         pct = pct * 0.01
-        mult = [abs(1-pct), 1] if pct > 0 else [1, abs(pct)] if pct < 0 else [1, 1]
+        mult = [abs(1 - pct), 1] if pct > 0 else [1, abs(pct)] if pct < 0 else [1, 1]
         return x * mult
 
     def get_wavetable(self, name):
         wt = Wavetable()
-        if name == "sin-m":
+        if name == "sin-m" or name[-2] == ".":
             return wt.sinwave()
         elif name == "sin-s":
             return wt.stereo([wt.sinwave()] * 2)
@@ -66,10 +65,27 @@ class Generator:
             return []
         return wt
 
-    def write(self, name, sr=44100, subtype='PCM_24'):
+    def write(self, name, sr=44100, subtype="PCM_24"):
         write(self.path(name), self.get_wavetable(name), sr, subtype)
+
 
 if __name__ == "__main__":
     wt_gen = Generator()
-    for name in ["sin-m", "sin-s", "0-m", "0-s", "sin+tri", "sin-r100", "sin-l50", "sin-r25", "empty"]:
+    dirname = os.path.dirname(os.path.realpath(__file__))
+    for f in os.listdir(dirname):
+        if f.endswith(".wav"):
+            os.remove(os.path.join(dirname, f))
+    for name in [
+        "sin-m",
+        "sin-s",
+        "sin.L",
+        "sin.R",
+        "0-m",
+        "0-s",
+        "sin+tri",
+        "sin-r100",
+        "sin-l50",
+        "sin-r25",
+        "empty",
+    ]:
         wt_gen.write(name)
